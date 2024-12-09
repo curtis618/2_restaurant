@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class = "text-center">訂單 {{ order_id }}</h2>
+<div class="container mt-5 d-flex justify-content-center">
+    <div class="card shadow-lg" style="width: 100%; max-width: 600px; border-radius: 15px;">
+        <div class="card-header text-center bg-dark text-white">
+            <h2>訂單詳細資訊</h2>
+        </div>
+        <div class="card-body">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th>菜單</th>
+                        <th class="text-end">數量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orderitems %}
+                    <tr>
+                        <td>{{ menu_names[order.menu_id] }}</td>
+                        <td class="text-end">{{ order.quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-end" style="text-align:right">
+            <h4 class="text-end status-text" >總計：${{ order.total_price }}</h4>
+            {% if order.status == 'pending' %}
+            <h4 class="text-end status-text" >訂單狀態：準備中</h4>
+            {% elif order.status == 'accepted' %}
+            <h4 class="text-end status-text" >訂單狀態：已通知顧客取餐</h4>
+            {% elif order.status == 'delivered' %}
+            <h4 class="text-end status-text" >訂單狀態：已取餐</h4>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

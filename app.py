@@ -13,8 +13,26 @@ def get_db_connection():
         database='FoodDelivery'
     )
     return connection
+# orders details
+@app.route('/order_details/<int:order_id>', methods=['GET'])
+def order_details(order_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True) 
+    cursor.execute('SELECT * FROM Orderitems WHERE order_id = %s', (order_id,))
+    orderitems = cursor.fetchall()
+    
+    # Fetch menu names
+    menu_names = {}
+    for item in orderitems:
+        cursor.execute('SELECT item_name FROM Menus WHERE menu_id = %s', (item['menu_id'],))
+        menu_name = cursor.fetchone()
+        if menu_name:
+            menu_names[item['menu_id']] = menu_name['item_name']
+    
+    cursor.execute('SELECT * FROM Orders WHERE order_id = %s', (order_id,))
+    order = cursor.fetchone()
 
-# restaurant profile
+    return render_template('order_detail.html', orderitems=orderitems, order=order, order_id=order_id, menu_names=menu_names)
 @app.route('/restaurant/<int:restaurant_id>', methods=['GET'])
 def rastaurant_profile(restaurant_id):
     connection = get_db_connection()
