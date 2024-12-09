@@ -13,24 +13,26 @@
             </thead>
             <tbody>
                 {% for order in orders %}
+                {% if order.status != 'delivered' %}
                 <tr>
                     <td>{{ order.order_id }}</td>
                     <td>{{ order.customer_id }}</td>
                     <td>${{ order.total_price }}</td>
                     <td>
                     {% if order.status == 'pending' %}
-                    <form method="post" action="{{ url_for('notify_customer', order_id=order.order_id) }}">
-                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                        <button type="submit" class="btn btn-warning">通知顧客取餐</button>
-                    </form>
+                        <form method="post" action="{{ url_for('notify_customer', order_id=order.order_id) }}">
+                            <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                            <button type="submit" class="btn btn-warning">通知顧客取餐</button>
+                        </form>
                     {% elif order.status == 'accepted' %}
-                    <form method="post" action="{{ url_for('check_order', order_id=order.order_id) }}">
-                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                        <button type="submit" class="btn btn-warning">已通知顧客取餐</button>
-                    </form>                    
+                        <form method="post" action="{{ url_for('check_order', order_id=order.order_id) }}">
+                            <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                            <button type="submit" class="btn btn-success">已通知顧客取餐</button>
+                        </form>                    
                     {% endif %}
                     </td>
                 </tr>
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>

@@ -59,7 +59,7 @@ def add_menu_item(restaurant_id):
         connection.close()
 
         flash('菜單項目已成功上架', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_menu', restaurant_id=restaurant_id))
 
     return render_template('add_menu_item.html', restaurant_id=restaurant_id)
 
@@ -68,26 +68,13 @@ def add_menu_item(restaurant_id):
 def manage_orders(restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    
-    if request.method == 'POST':
-        # 更新訂單狀態為「準備中」或「已準備好」
-        order_id = request.form['order_id']
-        new_status = request.form['new_status']
-        cursor.execute('''
-            UPDATE Orders
-            SET status = %s
-            WHERE order_id = %s
-        ''', (new_status, order_id))
-        connection.commit()
-        flash('訂單狀態已更新', 'success')
-    
     # 獲取該餐廳的所有待確認訂單
     cursor.execute('''
         SELECT * FROM Orders
-        WHERE restaurant_id = %s AND status = 'pending'
+        WHERE restaurant_id = %s
     ''', (restaurant_id,))
     pending_orders = cursor.fetchall()
-    
+    print(pending_orders)
     cursor.close()
     connection.close()
     return render_template('manage_orders.html', orders=pending_orders)
@@ -101,6 +88,16 @@ def notify_customer(order_id):
     cursor.close()
     connection.close()
     flash('已通知顧客取餐', 'info')
+    return redirect(url_for('manage_orders', restaurant_id=1))
+
+@app.route('/check_order/<int:order_id>', methods=['POST'])
+def check_order(order_id):    
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('delivered', order_id))
+    connection.commit()
+    cursor.close()
+    connection.close()
     return redirect(url_for('manage_orders', restaurant_id=1))
 
 @app.route('/order_history/<int:restaurant_id>', methods=['GET'])

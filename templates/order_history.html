@@ -13,7 +13,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                {% if order.status == 'accepted' %}
+                {% if order.status == 'delivered' %}
                 <tr>
                     <td>{{ order.order_id }}</td>
                     <td>{{ order.customer_id }}</td>
