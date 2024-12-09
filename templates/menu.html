@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 class="text-center mt-4">菜單管理</h1>
+    <div class="container mt-4">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>菜單項目名稱</th>
+                        <th>描述</th>
+                        <th>價格</th>
+                        <th>庫存數量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for menu in menus %}
+                    <tr>
+                        <td>{{ menu.item_name }}</td>
+                        <td>{{ menu.description }}</td>
+                        <td>{{ menu.price }}</td>
+                        <td>{{ menu.stock_quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="text-center">新增菜單項目</h1>
+        <div class="form-container p-4 mt-4 shadow rounded bg-white">
+            <form method="post">
+                <div class="form-group text-center mt-3">
+                    <label for="item_name">菜單項目名稱</label>
+                    <input type="text" class="form-control" id="item_name" name="item_name" placeholder="輸入菜單名稱" required>
+                </div>
+                <div class="form-group text-center mt-3">
+                    <label for="description">描述</label>
+                    <input type="text" class="form-control" id="description" name="description" placeholder="描述菜單內容">
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="price">價格</label>
+                        <input type="number" class="form-control" id="price" name="price" step="0.01" placeholder="輸入價格" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="stock_quantity">庫存數量</label>
+                        <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" placeholder="輸入庫存數量" required>
+                    </div>
+                </div>
+                <div class="form-group text-center mt-3">
+                    <button type="submit" class="btn btn-gradient">上架菜單</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

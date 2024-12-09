@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>用戶列表</h1>
+    <ul>
+        {% for user in users %}
+        <li>{{ user.name }} - {{ user.email }} - {{ user.role }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('add_menu_item', restaurant_id=1) }}">新增菜單項目</a>
+
+{% endblock %}

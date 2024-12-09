@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1 class="text-center mt-4">訂單管理</h1>
+    <div class="container mt-4">
+        <table class="table table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>訂單編號</th>
+                    <th>顧客 ID</th>
+                    <th>總價格</th>
+                    <th>狀態更新</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.order_id }}</td>
+                    <td>{{ order.customer_id }}</td>
+                    <td>${{ order.total_price }}</td>
+                    <td>
+                    {% if order.status == 'pending' %}
+                    <form method="post" action="{{ url_for('notify_customer', order_id=order.order_id) }}">
+                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                        <button type="submit" class="btn btn-warning">通知顧客取餐</button>
+                    </form>
+                    {% elif order.status == 'accepted' %}
+                    <form method="post" action="{{ url_for('check_order', order_id=order.order_id) }}">
+                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                        <button type="submit" class="btn btn-warning">已通知顧客取餐</button>
+                    </form>                    
+                    {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
