@@ -92,7 +92,6 @@ def manage_orders(restaurant_id):
         WHERE restaurant_id = %s
     ''', (restaurant_id,))
     pending_orders = cursor.fetchall()
-    print(pending_orders)
     cursor.close()
     connection.close()
     return render_template('manage_orders.html', orders=pending_orders)

@@ -16,7 +16,7 @@
                 {% if order.status == 'delivered' %}
                 <tr>
                     <td><a href="{{ url_for('order_details', order_id=order.order_id) }}">{{ order.order_id }}</a></td>
-                                        <td>{{ order.customer_id }}</td>
+                    <td>{{ order.customer_id }}</td>
                     <td>${{ order.total_price }}</td>
                     <td>已取餐</td>
                 </tr>
