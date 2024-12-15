@@ -1,0 +1,18 @@
+{% extends "delivery_base.html" %}
+
+{% block title %}
+外送員個人信息
+{% endblock %}
+
+{% block content %}
+<h2 class="text-center">外送員個人信息</h2>
+<hr>
+<div class="card">
+    <div class="card-body">
+        <h5>基本信息</h5>
+        <p><strong>姓名：</strong> {{ user.name }}</p>
+        <p><strong>聯繫方式：</strong> {{ user.phone }}</p>
+        <p><strong>角色：</strong> 外送員</p>
+    </div>
+</div>
+{% endblock %}

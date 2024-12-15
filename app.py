@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import mysql.connector
 
 app = Flask(__name__)
@@ -126,6 +126,131 @@ def order_history(restaurant_id):
     cursor.close()
     connection.close()
     return render_template('order_history.html', orders=orders)
+
+#外送員
+@app.route('/delivery/dashboard/<int:delivery_person_id>', methods=['GET'])
+def delivery_dashboard(delivery_person_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # 查询已完成订单数量
+    cursor.execute('''
+        SELECT COUNT(*) AS completed_count
+        FROM Deliveries
+        WHERE delivery_status = 'completed' AND delivery_person_id = %s
+    ''', (delivery_person_id,))
+    completed_result = cursor.fetchone()
+    completed_count = completed_result['completed_count'] if completed_result else 0
+
+    # 查询外送员基本信息
+    cursor.execute('SELECT * FROM Users WHERE user_id = %s', (delivery_person_id,))
+    delivery_person = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if not delivery_person:
+        return "外送員不存在", 404
+
+    return render_template(
+        'delivery_dashboard.html',
+        delivery_person=delivery_person,
+        delivery_person_id=delivery_person_id,
+        completed_count=completed_count
+    )
+
+# 待配送订单
+@app.route('/delivery/orders/<int:delivery_person_id>', methods=['GET'])
+def view_delivery_orders(delivery_person_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # 查询待配送订单
+    cursor.execute('''
+        SELECT d.delivery_id, d.order_id, o.customer_id, o.total_price, r.name AS restaurant_name
+        FROM Deliveries d
+        JOIN Orders o ON d.order_id = o.order_id
+        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
+        WHERE d.delivery_status = 'pending'
+    ''')
+    orders = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return render_template(
+        'delivery_orders.html',
+        delivery_person_id=delivery_person_id,
+        orders=orders
+    )
+
+# 接单操作
+@app.route('/delivery/orders/<int:delivery_person_id>/<int:delivery_id>/accept', methods=['POST'])
+def accept_delivery(delivery_person_id, delivery_id):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    # 更新订单状态为 "in_progress" 并绑定外送员
+    cursor.execute('''
+        UPDATE Deliveries
+        SET delivery_status = 'in_progress', delivery_person_id = %s, pickup_time = NOW()
+        WHERE delivery_id = %s
+    ''', (delivery_person_id, delivery_id))
+    connection.commit()
+
+    cursor.close()
+    connection.close()
+
+    flash('成功接单！', 'success')
+    return redirect(url_for('view_delivery_orders', delivery_person_id=delivery_person_id))
+
+# 已完成订单
+@app.route('/delivery/orders/completed/<int:delivery_person_id>', methods=['GET'])
+def completed_orders(delivery_person_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # 查询已完成订单
+    cursor.execute('''
+        SELECT d.delivery_id, d.order_id, o.customer_id, o.total_price, r.name AS restaurant_name, d.delivery_time
+        FROM Deliveries d
+        JOIN Orders o ON d.order_id = o.order_id
+        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
+        WHERE d.delivery_status = 'completed' AND delivery_person_id = %s
+    ''', (delivery_person_id,))
+    orders = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return render_template(
+        'completed_orders.html',
+        delivery_person_id=delivery_person_id,
+        orders=orders
+    )
+
+# 外送员个人信息
+@app.route('/delivery/profile/<int:delivery_person_id>', methods=['GET'])
+def delivery_profile(delivery_person_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # 查询外送员的个人信息
+    cursor.execute('SELECT * FROM Users WHERE user_id = %s', (delivery_person_id,))
+    delivery_person = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if not delivery_person:
+        return "外送員不存在", 404
+
+    return render_template(
+        'delivery_profile.html',
+        delivery_person=delivery_person,
+        delivery_person_id=delivery_person_id
+    )
+
 
 if __name__ == '__main__':
     app.run(debug=True)
