@@ -1,4 +1,4 @@
-{% extends "delivery_base.html" %}
+{% extends "delivery/delivery_base.html" %}
 
 {% block title %}
 外送員系統
@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <h5>待配送訂單</h5>
                     <p>查看並接收所有待配送的訂單。</p>
-                    <a href="{{ url_for('view_delivery_orders') }}" class="btn btn-primary">查看訂單</a>
+                    <a href="{{ url_for('view_delivery_orders',delivery_person_id=delivery_person_id) }}" class="btn btn-primary">查看訂單</a>
                 </div>
             </div>
         </div>
@@ -22,7 +22,7 @@
                 <div class="card-body">
                     <h5>已完成訂單</h5>
                     <p>查看歷史配送記錄。</p>
-                    <a href="{{ url_for('completed_orders') }}" class="btn btn-success">查看記錄</a>
+                    <a href="{{ url_for('completed_orders',delivery_person_id=delivery_person_id) }}" class="btn btn-success">查看記錄</a>
                 </div>
             </div>
         </div>

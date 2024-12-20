@@ -1,0 +1,85 @@
+{% extends "auth_base.html" %}
+
+{% block title %}註冊頁面{% endblock %}
+
+{% block content %}
+<div class="vertical-center">
+    <div class="container">
+        <div class="register-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-plus icon-spacing"></i>註冊新帳號</h3>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert">
+                                        <span>&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('register') }}">
+                        <div class="form-group">
+                            <label for="name"><i class="fas fa-user icon-spacing"></i>用戶名</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email"><i class="fas fa-envelope icon-spacing"></i>電子郵件</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password"><i class="fas fa-lock icon-spacing"></i>密碼</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="role"><i class="fas fa-user-tag mr-2"></i>選擇角色</label>
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="">請選擇...</option>
+                                <option value="customer">客人</option>
+                                <option value="vendor">餐廳</option>
+                                <option value="外送員">外送員</option>
+                                
+                            </select>
+                        </div>
+
+                        <div class="optional-fields">
+                            <h6 class="optional-fields-title"><i class="fas fa-info-circle icon-spacing"></i>選填資料</h6>
+                            
+                            <div class="form-group">
+                                <label for="phone"><i class="fas fa-phone icon-spacing"></i>電話號碼</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                                <small class="form-text text-muted">選填，方便聯繫使用</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="restaurant_id"><i class="fas fa-store icon-spacing"></i>餐廳 ID</label>
+                                <input type="text" class="form-control" id="restaurant_id" name="restaurant_id">
+                                <small class="form-text text-muted">如果您是餐廳業者，請填寫餐廳 ID</small>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-gradient">
+                            <i class="fas fa-user-plus icon-spacing"></i>註冊
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="auth-link">
+                <a href="{{ url_for('login') }}">
+                    <i class="fas fa-sign-in-alt icon-spacing"></i>已有帳號？立即登入
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

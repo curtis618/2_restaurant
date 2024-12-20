@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>外送員管理</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>信箱</th>
+                            <th>電話</th>
+                            <th>已完成訂單</th>
+                            <th>進行中訂單</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for person in delivery_persons %}
+                        <tr>
+                            <td>{{ person.user_id }}</td>
+                            <td>{{ person.name }}</td>
+                            <td>{{ person.email }}</td>
+                            <td>{{ person.phone or '未設置' }}</td>
+                            <td>{{ person.completed_deliveries }}</td>
+                            <td>{{ person.ongoing_deliveries }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>平台管理儀表板</h1>
+    
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">餐廳管理</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">總餐廳數: {{ restaurants|length }}</h6>
+                    <a href="{{ url_for('manage_restaurants', platform_id=platform_id) }}" class="btn btn-primary">查看詳情</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">外送員管理</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">總外送員數: {{ delivery_persons|length }}</h6>
+                    <a href="{{ url_for('manage_delivery_persons', platform_id=platform_id) }}" class="btn btn-primary">查看詳情</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">訂單管理</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">最近訂單數: {{ recent_orders|length }}</h6>
+                    <a href="{{ url_for('manage_platform_orders', platform_id=platform_id) }}" class="btn btn-primary">查看詳情</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">最近訂單</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>訂單ID</th>
+                                    <th>客戶</th>
+                                    <th>餐廳</th>
+                                    <th>外送員</th>
+                                    <th>狀態</th>
+                                    <th>總價</th>
+                                    <th>訂單時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.order_id }}</td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td>{{ order.restaurant_name }}</td>
+                                    <td>{{ order.delivery_person_name or '未指派' }}</td>
+                                    <td>{{ order.status }}</td>
+                                    <td>${{ "%.2f"|format(order.total_price) }}</td>
+                                    <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

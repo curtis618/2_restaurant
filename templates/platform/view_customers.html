@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>察看客人資料</title>
+</head>
+<body>
+    <h1>察看客人資料</h1>
+    <p>您可以在這裡查看所有客人資料。</p>
+    <ul>
+        {% for customer in customers %}
+            <li>{{ customer.username }} - {{ customer.role }}</li>
+        {% else %}
+            <li>目前沒有客人資料。</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('platform_dashboard') }}">返回平台方 Dashboard</a>
+</body>
+</html>

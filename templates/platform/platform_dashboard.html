@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平台方 Dashboard</title>
+</head>
+<body>
+    <h1>歡迎來到平台方 Dashboard</h1>
+
+    <p>選擇以下功能進行管理：</p>
+
+    <ul>
+        <li><a href="{{ url_for('manage_delivery_persons') }}">管理外送員</a></li>
+        <li><a href="{{ url_for('manage_restaurants') }}">管理餐廳</a></li>
+        <li><a href="{{ url_for('view_customers') }}">察看客人資料</a></li>
+    </ul>
+
+    <a href="{{ url_for('logout') }}">登出</a>
+</body>
+</html>

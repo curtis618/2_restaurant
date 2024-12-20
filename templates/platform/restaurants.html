@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>餐廳管理</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>餐廳ID</th>
+                            <th>餐廳名稱</th>
+                            <th>地址</th>
+                            <th>電話</th>
+                            <th>負責人</th>
+                            <th>負責人信箱</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for restaurant in restaurants %}
+                        <tr>
+                            <td>{{ restaurant.restaurant_id }}</td>
+                            <td>{{ restaurant.name }}</td>
+                            <td>{{ restaurant.address }}</td>
+                            <td>{{ restaurant.phone }}</td>
+                            <td>{{ restaurant.owner_name }}</td>
+                            <td>{{ restaurant.owner_email }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

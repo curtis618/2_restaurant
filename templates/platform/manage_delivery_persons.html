@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理外送員</title>
+</head>
+<body>
+    <h1>管理外送員</h1>
+    <p>您可以在這裡查看所有外送員資料。</p>
+    <ul>
+        {% for delivery_person in delivery_persons %}
+            <li>{{ delivery_person.username }} - {{ delivery_person.role }}</li>
+        {% else %}
+            <li>目前沒有外送員資料。</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('platform_dashboard') }}">返回平台方 Dashboard</a>
+</body>
+</html>

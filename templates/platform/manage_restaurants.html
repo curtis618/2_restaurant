@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理餐廳</title>
+</head>
+<body>
+    <h1>管理餐廳</h1>
+    <p>您可以在這裡查看所有餐廳資料。</p>
+    <ul>
+        {% for restaurant in restaurants %}
+            <li>{{ restaurant.username }} - {{ restaurant.role }}</li>
+        {% else %}
+            <li>目前沒有餐廳資料。</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('platform_dashboard') }}">返回平台方 Dashboard</a>
+</body>
+</html>
+
