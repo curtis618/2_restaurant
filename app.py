@@ -90,7 +90,7 @@ def login():
             if user['role'] == '外送員':
                 return redirect(url_for('delivery_orders', delivery_id=user['user_id']))
             elif user['role'] == 'customer':
-                return redirect(url_for('customer_dashboard'))
+                return redirect(url_for('customer_dashboard',customer_id=user['user_id']))
             elif user['role'] == 'vendor':
                 return redirect(url_for('manage_orders', restaurant_id=user['user_id']))
             elif user['role'] == 'platform':
@@ -572,7 +572,7 @@ def customer_dashboard(customer_id):
     dat = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('customer/customer_dashboard.html',data = dat)
+    return render_template('customer/customer_dashboard.html',data = dat,customer_id=customer_id)
 
 #看餐廳
 @app.route('/customer/<int:customer_id>/view_restaurant', methods=['GET'])
@@ -590,11 +590,11 @@ def customer_view_restaurant(customer_id):
 def customer_pickup(customer_id):
     connection =  get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM orders WHERE customer_id = %s AND status = %s', (customer_id, 'accepted'))
+    cursor.execute('SELECT * FROM orders WHERE customer_id = %s AND (status = %s OR status = %s)', (customer_id, 'accepted', 'pending'))
     pickup = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('customer/customer_pickup.html',data = pickup)
+    return render_template('customer/customer_pickup.html',data = pickup,customer_id=customer_id)
 
 #取餐確認   
 @app.route('/customer/<int:customer_id>/pickup_confirm/<int:order_id>', methods=['POST'])
@@ -607,16 +607,25 @@ def customer_pickup_confirm(customer_id, order_id):
     connection.close()
     return redirect(url_for('customer_pickup', customer_id=customer_id))
 
-#訂單
+#查看訂單
 @app.route('/customer/<int:customer_id>/orders', methods=['GET', 'POST'])
 def customer_orders(customer_id):
     connection =  get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM orders WHERE customer_id = %s ORDER BY order_date DESC;', (customer_id,))
+    cursor.execute('''
+    SELECT o.*, 
+           r.name AS restaurant_name,
+           rv.review_id IS NOT NULL AS is_reviewed
+    FROM Orders o
+    JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
+    LEFT JOIN Reviews rv ON o.order_id = rv.order_id
+    WHERE o.customer_id = %s
+    ORDER BY o.order_date DESC
+    ''', (customer_id,))
     pickup = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('customer/customer_orders.html',data = pickup)
+    return render_template('customer/customer_orders.html',data = pickup,customer_id=customer_id)
 
 #評論紀錄
 @app.route('/customer/<int:customer_id>/reviews', methods=['GET', 'POST'])
@@ -649,8 +658,6 @@ def customer_add_review(order_id,customer_id,restaurant_id):
         connection.commit()
         cursor.close()
         connection.close()
-
-        flash('評論已成功新增', 'success')
         return redirect(url_for('customer_reviews', customer_id=customer_id))
 
     return render_template('customer/customer_add_review.html',order_id = order_id,customer_id=customer_id,restaurant_id=restaurant_id)
@@ -665,7 +672,7 @@ def customer_edit_review(customer_id, review_id):
 
     if request.method == 'POST':
         rating = request.form['rating']
-        review_text = request.form['review']
+        review_text = request.form['comment']
 
         cursor.execute(
             "UPDATE reviews SET rating = %s, comment = %s WHERE review_id = %s",
@@ -695,43 +702,63 @@ def customer_delete_review(customer_id, review_id):
 #查看菜單
 @app.route('/customer/<int:restaurant_id>/view_menu', methods=['GET', 'POST'])
 def customer_view_menu(restaurant_id):
+    cus_id = session['user_id']
     connection =  get_db_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute('SELECT * FROM menus WHERE restaurant_id = %s', (restaurant_id,))
     menu = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('customer/customer_menu.html', menus=menu,restaurant_id = restaurant_id)
+    return render_template('customer/customer_menu.html', menus=menu,restaurant_id = restaurant_id,customer_id = cus_id)
 
 #下訂單
-@app.route('/place_order/<int:restaurant_id>/<int:menu_id>', methods=['POST'])
-def place_order(restaurant_id, menu_id):
+@app.route('/place_order/<int:restaurant_id>', methods=['POST'])
+def place_order(restaurant_id):
     customer_id = session['user_id']
-    quantity = request.form['quantity']
     connection = get_db_connection()
-    cursor = connection.cursor()
-
+    cursor = connection.cursor(dictionary=True)
+    # 創建訂單
     cursor.execute(
         "INSERT INTO Orders (customer_id, restaurant_id, status, total_price) VALUES (%s, %s, %s, %s)",
         (customer_id, restaurant_id, 'pending', 0)
     )
-    order_id = cursor.lastrowid
-
-    cursor.execute(
-        "INSERT INTO OrderItems (order_id, menu_id, quantity) VALUES (%s, %s, %s)",
-        (order_id, menu_id, quantity)
-    )
-
-    cursor.execute(
-        "UPDATE Orders SET total_price = (SELECT SUM(m.price * oi.quantity) FROM OrderItems oi JOIN Menus m ON oi.menu_id = m.menu_id WHERE oi.order_id = %s) WHERE order_id = %s",
-        (order_id, order_id)
-    )
-
     connection.commit()
+    # 獲取orders最近新增的ID
+    cursor.execute('''
+                    SELECT *FROM orders
+                    ORDER BY order_id DESC
+                    LIMIT 1;''')
+    order_id = cursor.fetchone()['order_id']
+    
+    # 獲取菜單
+    cursor.execute('SELECT * FROM menus WHERE restaurant_id = %s', (restaurant_id,))
+    menus = cursor.fetchall()
+    # 創建orderitems
+    for menu in menus:
+        menu_id = menu['menu_id']
+        menu_price = menu['price']
+        quantity = request.form.get(f"quantity_{menu_id}")
+        # 如果數量不為0，則新增orderitems
+        if int(quantity) != 0:
+            cursor.execute(
+                "INSERT INTO Orderitems (order_id, menu_id, quantity, price) VALUES (%s, %s, %s, %s)",
+                (order_id, menu_id, quantity, int(quantity)*int(menu_price))
+            )
+            connection.commit()          
+        else:
+            continue
+
+        #menu.stock_quantity - quantity
+        cursor.execute('UPDATE Menus SET stock_quantity = stock_quantity - %s WHERE menu_id = %s', (quantity, menu_id))
+    
+    # 更新訂單總價
+    cursor.execute('SELECT SUM(price) AS total_price FROM Orderitems WHERE order_id = %s', (order_id,))
+    total_price = cursor.fetchone()['total_price']
+    cursor.execute('UPDATE Orders SET total_price = %s WHERE order_id = %s', (total_price, order_id))
+    connection.commit()
+
     cursor.close()
     connection.close()
-
-    flash('訂單已成功下達', 'success')
     return redirect(url_for('customer_orders', customer_id=customer_id))
 
 # 其他功能保持不變，例如平台管理、外送員管理等

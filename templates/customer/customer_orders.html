@@ -15,7 +15,7 @@
             <tbody>
                 {% for order in data %}
                 <tr>
-                    <td>{{ order.restaurant_id }}</td>
+                    <td>{{ order.restaurant_name }}</td>
                     <td>${{ order.total_price }}</td>
                     <td>{{ order.order_date }}</td>
                     <td>
@@ -29,11 +29,13 @@
                     </td>
                     <td>
                     {% if order.status == 'delivered' %}
-                        {% if order.order_id in reviews %}
-                            <a href="{{ url_for('customer_edit_review', customer_id=order.customer_id, order_id=order.order_id) }}" class="btn btn-secondary">編輯評論</a>
+                        {% if order.is_reviewed %}
+                            <h5 class="text-end status-text">已經評論過囉~</h5>
                         {% else %}
-                            <a href="{{ url_for('customer_add_review', order_id = order.order_id , customer_id=order.customer_id , restaurant_id = order.restaurant_id) }}" class="btn btn-primary">新增評論</a>
+                            <a href="{{ url_for('customer_add_review', order_id=order.order_id, customer_id=order.customer_id, restaurant_id=order.restaurant_id) }}" class="btn btn-primary">新增評論</a>
                         {% endif %}
+                    {% else %}
+                        <h5 class="text-end status-text">訂單進行中</h5>
                     {% endif %}
                 </tr>
                 {% endfor %}
