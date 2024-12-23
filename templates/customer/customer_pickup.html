@@ -1,0 +1,30 @@
+{% extends "customer/customer_base.html" %}
+{% block content %}
+    <div class="container mt-5">
+        <h1>訂單</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>商家</th>
+                    <th>價格</th>
+                    <th>下單時間</th>
+                    <th>取餐確認</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in data %}
+                <tr>
+                    <td>{{ order.restaurant_id }}</td>
+                    <td>${{ order.total_price }}</td>
+                    <td>{{ order.order_date }}</td>
+                    <td>
+                        <form action="{{ url_for('customer_pickup_confirm', customer_id = 1 ,order_id = order.order_id) }}" method="post">
+                            <button type="submit" class="btn btn-primary">取餐確認</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

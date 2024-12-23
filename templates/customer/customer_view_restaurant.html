@@ -1,0 +1,30 @@
+{% extends "customer/customer_base.html" %}
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="text-center">餐廳</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>名稱</th>
+                    <th>地址</th>
+                    <th>電話</th>
+                    <th>查看菜單</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for restaurant in data %}
+                <tr>
+                    <td>{{ restaurant.name }}</td>
+                    <td>{{ restaurant.address }}</td>
+                    <td>{{ restaurant.phone }}</td>
+                    <td>
+                        <form action="{{ url_for('customer_view_menu', restaurant_id = restaurant.restaurant_id)}}" method="get">
+                            <button type="submit" class="btn btn-primary">查看菜單</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
