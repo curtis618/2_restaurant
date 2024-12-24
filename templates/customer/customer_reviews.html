@@ -1,0 +1,36 @@
+{% extends "customer/customer_base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">我的評價紀錄</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>餐廳</th>
+                <th>評分</th>
+                <th>評論</th>
+                <th>編輯評論</th>
+                <th>刪除評論</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for review in data %}
+            <tr>
+                <td>{{ review.restaurant_name }}</td>
+                <td>{{ review.rating }}</td>
+                <td>{{ review.comment }}</td>
+                <td>
+                    <form action="{{url_for('customer_edit_review',customer_id = customer_id, review_id = review.review_id)}}" method="get">
+                        <button type="submit" class="btn btn-primary">編輯評論</button>
+                    </form>
+                </td>
+                <td>
+                    <form action="{{url_for('customer_delete_review',customer_id = customer_id, review_id = review.review_id)}}" method="post">
+                        <button type="submit" class="btn btn-danger">刪除評論</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

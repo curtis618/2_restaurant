@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>客人 Dashboard</title>
-</head>
-<body>
-    <h1>歡迎來到客人 Dashboard</h1>
-    <p>您已成功登入為客人。</p>
-    <p>歡迎，{{ session['username'] }}！</p> <!-- 顯示用戶名 -->
-    <p>這裡是客人的專屬頁面，您可以瀏覽餐廳和下訂單。</p>
-    <a href="{{ url_for('logout') }}">登出</a>
-</body>
-</html>
+{% extends "customer/customer_base.html" %}
+{% block content %}
+    <!-- Main Content -->
+    {% for user in data %}
+    <div class="profile-card mt-5 p-4">
+        <p class="bio"> 哈囉~{{ user.name }}</p>
+        <p class="bio"> 信箱: {{ user.email }}</p>
+        <p class="bio"> 身分: {{ user.role }}</p>
+        <p class="bio">手機號碼: {{ user.phone }}</p>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

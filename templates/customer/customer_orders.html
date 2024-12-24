@@ -1,0 +1,43 @@
+{% extends "customer/customer_base.html" %}
+{% block content %}
+    <div class="container mt-5">
+        <h1>訂單</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>商家</th>
+                    <th>價格</th>
+                    <th>下單時間</th>
+                    <th>狀態</th>
+                    <th>評論</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in data %}
+                <tr>
+                    <td>{{ order.restaurant_id }}</td>
+                    <td>${{ order.total_price }}</td>
+                    <td>{{ order.order_date }}</td>
+                    <td>
+                        {% if order.status == 'pending' %}
+                        <h4 class="text-end status-text">運送中</h4>
+                        {% elif order.status == 'accepted' %}
+                        <h4 class="text-end status-text">已到貨</h4>
+                        {% elif order.status == 'delivered' %}
+                        <h4 class="text-end status-text">已完成</h4>
+                        {% endif %}
+                    </td>
+                    <td>
+                    {% if order.status == 'delivered' %}
+                        {% if order.order_id in reviews %}
+                            <a href="{{ url_for('customer_edit_review', customer_id=order.customer_id, order_id=order.order_id) }}" class="btn btn-secondary">編輯評論</a>
+                        {% else %}
+                            <a href="{{ url_for('customer_add_review', order_id = order.order_id , customer_id=order.customer_id , restaurant_id = order.restaurant_id) }}" class="btn btn-primary">新增評論</a>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
