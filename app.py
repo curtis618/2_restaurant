@@ -92,8 +92,8 @@ def login():
                 return redirect(url_for('view_delivery_orders', delivery_person_id=user['delivery_person_id']))
             elif user['role'] == 'customer':
                 session['customer_id'] = user['user_id']
-                return redirect(url_for('customer_dashboard'))
-            elif user['role'] == 'vendor':
+                return redirect(url_for('customer_dashboard', customer_id=user['user_id']))
+            elif user['role'] == 'vendor':  
                 session['restaurant_id'] = user['restaurant_id']
                 return redirect(url_for('manage_orders', restaurant_id=user['restaurant_id']))
             elif user['role'] == 'platform':
@@ -580,7 +580,7 @@ def manage_platform_orders(platform_id):
                          platform_id=platform_id,
                          orders=orders)
 
-#餐廳--------------------------------------------------------------------
+#餐廳-----------------------------------------------------------------------------------------------------------------------------------
 @app.route('/customer/<int:customer_id>/dashboard', methods=['GET'])
 def customer_dashboard(customer_id):
     connection =  get_db_connection()
