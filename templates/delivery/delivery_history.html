@@ -1,4 +1,4 @@
-{% extends "delivery_base.html" %}
+{% extends "base.html" %}
 
 {% block title %}配送記錄{% endblock %}
 
@@ -31,7 +31,13 @@
                 </tr>
             </thead>
             <tbody>
+                {% if not orders %}
+                <div class="text-center mt-4">
+                    <p>目前沒有配送記錄</p>
+                </div>
+                {% else %}
                 {% for order in orders %}
+                {% if order.delivery_status == 'completed' %}
                 <tr>
                     <td>{{ order.order_id }}</td>
                     <td>{{ order.restaurant_name }}</td>
@@ -39,15 +45,13 @@
                     <td>${{ order.total_amount }}</td>
                     <td>{{ order.updated_at }}</td>
                 </tr>
+                {% endif %}
                 {% endfor %}
+                {% endif %}
             </tbody>
         </table>
     </div>
 
-    {% if not orders %}
-    <div class="text-center mt-4">
-        <p>目前沒有配送記錄</p>
-    </div>
-    {% endif %}
+
 </div>
 {% endblock %}

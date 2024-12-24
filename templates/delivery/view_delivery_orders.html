@@ -1,4 +1,4 @@
-{% extends "delivery_base.html" %}
+{% extends "base.html" %}
 
 {% block title %}
 待配送訂單
@@ -21,18 +21,28 @@
     </thead>
     <tbody>
         {% for order in orders %}
+        {% if order.delivery_status != 'completed' %}
         <tr>
-            <td>{{ order.delivery_id }}</td>
-            <td>{{ order.order_id }}</td>
             <td>{{ order.customer_id }}</td>
-            <td>{{ order.restaurant_name }}</td>
+            <td>{{ order.restaurant_id }}</td>
             <td>${{ order.total_price }}</td>
             <td>
-                <form action="{{ url_for('accept_delivery', delivery_id=order.delivery_id) }}" method="post">
-                    <button type="submit" class="btn btn-primary">接單</button>
+            {% if order.delivery_status == 'pending' %}
+                <form method="post" action="{{ url_for('get_delivery', order_id=order.order_id) }}">
+                    <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                    <button type="submit" class="btn btn-warning">接單</button>
                 </form>
+            {% elif order.delivery_status == 'in_progress' %}
+                <form method="post" action="{{ url_for('complete_order', order_id=order.order_id) }}">
+                    <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                    <button type="submit" class="btn btn-success">完成</button>
+                </form>
+            {% else %}
+                <span class="text-success">已完成</span>                    
+            {% endif %}
             </td>
         </tr>
+        {% endif %}
         {% endfor %}
     </tbody>
 </table>

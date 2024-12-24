@@ -10,7 +10,7 @@ def get_db_connection():
         host='localhost',
         user='root', 
         password='', 
-        database='FoodDelivery'
+        database='FoodDelivery_1'
     )
     return connection
 
@@ -87,12 +87,15 @@ def login():
             cursor.close()
             conn.close()
 
-            if user['role'] == '外送員':
-                return redirect(url_for('delivery_orders', delivery_id=user['user_id']))
+            if user['role'] == 'delivery_person':
+                session['delivery_person_id'] = user['delivery_person_id']
+                return redirect(url_for('view_delivery_orders', delivery_person_id=user['delivery_person_id']))
             elif user['role'] == 'customer':
+                session['customer_id'] = user['user_id']
                 return redirect(url_for('customer_dashboard'))
             elif user['role'] == 'vendor':
-                return redirect(url_for('manage_orders', restaurant_id=user['user_id']))
+                session['restaurant_id'] = user['restaurant_id']
+                return redirect(url_for('manage_orders', restaurant_id=user['restaurant_id']))
             elif user['role'] == 'platform':
                 return redirect(url_for('platform_dashboard', platform_id=user['user_id']))
             else:
@@ -109,23 +112,36 @@ def login():
 def manage_orders(restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM Orders WHERE restaurant_id = %s', (restaurant_id,))
+    cursor.execute('SELECT * FROM orders WHERE restaurant_id = %s', (restaurant_id,))
     pending_orders = cursor.fetchall()
     cursor.close()
     connection.close()
     return render_template('vendor/manage_orders.html', orders=pending_orders)
 
 
-@app.route('/restaurant/<int:restaurant_id>', methods=['GET'])
-def rastaurant_profile(restaurant_id):
+@app.route('/<int:user_id>/profile', methods=['GET'])
+def profile(user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM Restaurants WHERE restaurant_id = %s', (restaurant_id,))
-    user = cursor.fetchall()
+    cursor.execute('SELECT * FROM users WHERE user_id = %s', (user_id,))
+    user = cursor.fetchone()
+    
+    if user['role'] == 'vendor':
+        cursor.execute('SELECT * FROM restaurants WHERE restaurant_id = %s', (user['user_id'],))
+        restaurants = cursor.fetchone()
+    elif user['role'] == 'platform':
+        cursor.execute('SELECT * FROM platforms WHERE platform_id = %s', (user['user_id'],))
+        platforms = cursor.fetchone()
+    elif user['role'] == 'delivery_person':
+        cursor.execute('SELECT * FROM deliveries WHERE delivery_person_id = %s', (user['delivery_person_id'],))
+        deliveries = cursor.fetchone()
     cursor.close()
     connection.close()
     print(user)
-    return render_template('vendor/profile.html', user=user)
+    return render_template('profile.html', user=user , restaurants=restaurants, platforms=platforms, deliveries=deliveries)
 
 
 
@@ -133,7 +149,7 @@ def rastaurant_profile(restaurant_id):
 def view_menu(restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM Menus WHERE restaurant_id = %s', (restaurant_id,))
+    cursor.execute('SELECT * FROM menus WHERE restaurant_id = %s', (restaurant_id,))
     menus = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -166,17 +182,17 @@ def add_menu_item(restaurant_id):
 def order_details(order_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True) 
-    cursor.execute('SELECT * FROM Orderitems WHERE order_id = %s', (order_id,))
+    cursor.execute('SELECT * FROM orderitems WHERE order_id = %s', (order_id,))
     orderitems = cursor.fetchall()
     
     menu_names = {}
     for item in orderitems:
-        cursor.execute('SELECT item_name FROM Menus WHERE menu_id = %s', (item['menu_id'],))
+        cursor.execute('SELECT item_name FROM menus WHERE menu_id = %s', (item['menu_id'],))
         menu_name = cursor.fetchone()
         if menu_name:
             menu_names[item['menu_id']] = menu_name['item_name']
     
-    cursor.execute('SELECT * FROM Orders WHERE order_id = %s', (order_id,))
+    cursor.execute('SELECT * FROM orders WHERE order_id = %s', (order_id,))
     order = cursor.fetchone()
 
     return render_template('vendor/order_detail.html', orderitems=orderitems, order=order, order_id=order_id, menu_names=menu_names)
@@ -185,7 +201,7 @@ def order_details(order_id):
 def notify_customer(order_id):
     connection = get_db_connection()
     cursor = connection.cursor()
-    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('accepted', order_id))
+    cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s', ('accepted', order_id))
     connection.commit()
     cursor.close()
     connection.close()
@@ -196,7 +212,7 @@ def notify_customer(order_id):
 def check_order(order_id):    
     connection = get_db_connection()
     cursor = connection.cursor()
-    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('delivered', order_id))
+    cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s', ('delivered', order_id))
     connection.commit()
     cursor.close()
     connection.close()
@@ -206,7 +222,7 @@ def check_order(order_id):
 def order_history(restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM Orders WHERE restaurant_id = %s', (restaurant_id,))
+    cursor.execute('SELECT * FROM orders WHERE restaurant_id = %s', (restaurant_id,))
     orders = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -216,6 +232,59 @@ def order_history(restaurant_id):
 
 
 # 外送員 Dashboard
+@app.route('/get_delivery/<int:order_id>', methods=['POST'])
+def get_delivery(order_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # 更新訂單的配送狀態為 'in_progress'
+        cursor.execute('''
+            UPDATE orders
+            SET delivery_status = 'in_progress'
+            WHERE order_id = %s AND delivery_status = 'pending'
+        ''', (order_id,))
+        
+        connection.commit()
+        flash('訂單已接單，正在配送中', 'success')
+    except Exception as e:
+        connection.rollback()
+        flash(f'接單失敗: {str(e)}', 'danger')
+    finally:
+        cursor.execute('SELECT * FROM orders WHERE order_id = %s', (order_id,))
+        order = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+    return redirect(url_for('view_delivery_orders', delivery_person_id=order['delivery_person_id']))
+
+@app.route('/complete_order/<int:order_id>', methods=['POST'])
+def complete_order(order_id):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # 更新訂單的配送狀態為 'completed'
+        cursor.execute('''
+            UPDATE orders
+            SET delivery_status = 'completed'
+            WHERE order_id = %s AND delivery_status = 'in_progress'
+        ''', (order_id,))
+        
+        connection.commit()
+        flash('訂單已完成', 'success')
+    except Exception as e:
+        connection.rollback()
+        flash(f'更新訂單狀態失敗: {str(e)}', 'danger')
+    finally:
+        cursor.execute('SELECT * FROM orders WHERE order_id = %s', (order_id,))
+        order = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+    return redirect(url_for('view_delivery_orders', delivery_person_id=order['delivery_person_id']))
+
+
 @app.route('/delivery/<int:delivery_person_id>/dashboard', methods=['GET'])
 def delivery_dashboard(delivery_person_id):
     connection = get_db_connection()
@@ -224,18 +293,17 @@ def delivery_dashboard(delivery_person_id):
     # 查詢已完成訂單數量
     cursor.execute('''
         SELECT COUNT(*) AS completed_count
-        FROM Deliveries
+        FROM deliveries
         WHERE delivery_status = 'completed' AND delivery_person_id = %s
     ''', (delivery_person_id,))
     completed_result = cursor.fetchone()
     completed_count = completed_result['completed_count'] if completed_result else 0
 
     # 查詢外送員基本資訊
-    cursor.execute('SELECT * FROM Users WHERE user_id = %s', (delivery_person_id,))
+    cursor.execute('SELECT * FROM users WHERE user_id = %s AND role = "delivery_person"', (delivery_person_id,))
     delivery_person = cursor.fetchone()
     cursor.close()
     connection.close()
-
 
     return render_template(
         'delivery/delivery_dashboard.html',
@@ -244,21 +312,14 @@ def delivery_dashboard(delivery_person_id):
         completed_count=completed_count
     )
 
-
-# 待配送订单
+# 待配送訂單
 @app.route('/delivery/<int:delivery_person_id>/orders', methods=['GET'])
 def view_delivery_orders(delivery_person_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
 
-    # 查询待配送订单
-    cursor.execute('''
-        SELECT d.delivery_id, d.order_id, o.customer_id, o.total_price, r.name AS restaurant_name
-        FROM Deliveries d
-        JOIN Orders o ON d.order_id = o.order_id
-        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
-        WHERE d.delivery_status = 'pending'
-    ''')
+    # 查詢待配送訂單
+    cursor.execute('SELECT * FROM orders WHERE delivery_person_id = %s', (delivery_person_id,))
     orders = cursor.fetchall()
 
     cursor.close()
@@ -270,15 +331,15 @@ def view_delivery_orders(delivery_person_id):
         orders=orders
     )
 
-# 接单操作
+# 接單操作
 @app.route('/delivery/<int:delivery_person_id>/orders/<int:delivery_id>/accept', methods=['POST'])
 def accept_delivery(delivery_person_id, delivery_id):
     connection = get_db_connection()
     cursor = connection.cursor()
 
-    # 更新订单状态为 "in_progress" 并绑定外送员
+    # 更新訂單狀態為 "in_progress" 並綁定外送員
     cursor.execute('''
-        UPDATE Deliveries
+        UPDATE deliveries
         SET delivery_status = 'in_progress', delivery_person_id = %s, pickup_time = NOW()
         WHERE delivery_id = %s
     ''', (delivery_person_id, delivery_id))
@@ -287,22 +348,22 @@ def accept_delivery(delivery_person_id, delivery_id):
     cursor.close()
     connection.close()
 
-    flash('成功接单！', 'success')
+    flash('成功接單！', 'success')
     return redirect(url_for('view_delivery_orders', delivery_person_id=delivery_person_id))
 
-# 已完成订单
+# 已完成訂單
 @app.route('/delivery/orders/completed/<int:delivery_person_id>', methods=['GET'])
 def completed_orders(delivery_person_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
 
-    # 查询已完成订单
+    # 查詢已完成訂單
     cursor.execute('''
         SELECT d.delivery_id, d.order_id, o.customer_id, o.total_price, r.name AS restaurant_name, d.delivery_time
-        FROM Deliveries d
-        JOIN Orders o ON d.order_id = o.order_id
-        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
-        WHERE d.delivery_status = 'completed' AND delivery_person_id = %s
+        FROM deliveries d
+        JOIN orders o ON d.order_id = o.order_id
+        JOIN restaurants r ON o.restaurant_id = r.restaurant_id
+        WHERE d.delivery_status = 'completed' AND d.delivery_person_id = %s
     ''', (delivery_person_id,))
     orders = cursor.fetchall()
 
@@ -315,125 +376,80 @@ def completed_orders(delivery_person_id):
         orders=orders
     )
 
-# 外送員路由
-@app.route('/delivery/<int:delivery_id>/orders')
-def delivery_orders(delivery_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    if int(session['user_id']) != int(delivery_id):
-        flash('無權訪問此頁面', 'danger')
-        return redirect(url_for('login'))
-        
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # 獲取待配送和配送中的訂單
-    cursor.execute("""
-        SELECT o.*, r.name as restaurant_name, c.address as customer_address 
-        FROM Orders o 
-        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id 
-        JOIN Customers c ON o.customer_id = c.customer_id 
-        WHERE o.delivery_person_id = %s 
-        AND o.status IN ('待配送', '配送中')
-    """, (delivery_id,))
-    
-    orders = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    
-    return render_template('delivery_orders.html', orders=orders)
 
-@app.route('/delivery/<int:delivery_id>/history')
-def delivery_history(delivery_id):
+@app.route('/delivery/<int:delivery_person_id>/history')
+def delivery_history(delivery_person_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
-    if int(session['user_id']) != int(delivery_id):
-        flash('無權訪問此頁面', 'danger')
-        return redirect(url_for('login'))
-        
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
     # 獲取已完成的訂單
-    cursor.execute("""
-        SELECT o.*, r.name as restaurant_name, c.address as customer_address 
-        FROM Orders o 
-        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id 
-        JOIN Customers c ON o.customer_id = c.customer_id 
-        WHERE o.delivery_person_id = %s 
-        AND o.status = '已送達'
-    """, (delivery_id,))
-    
+    cursor.execute('''SELECT * FROM orders WHERE delivery_person_id = %s''', (delivery_person_id,))
     orders = cursor.fetchall()
     cursor.close()
     conn.close()
-    
-    return render_template('delivery_history.html', orders=orders)
 
-@app.route('/delivery/<int:delivery_id>/profile')
-def delivery_profile(delivery_id):
+    return render_template('delivery/delivery_history.html', orders=orders)
+
+@app.route('/delivery/<int:delivery_person_id>/profile')
+def delivery_profile(delivery_person_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
-    if int(session['user_id']) != int(delivery_id):
-        flash('無權訪問此頁面', 'danger')
-        return redirect(url_for('login'))
-        
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
+
     # 獲取外送員資料
-    cursor.execute("""
+    cursor.execute('''
         SELECT * FROM users 
-        WHERE user_id = %s AND role = '外送員'
-    """, (delivery_id,))
-    
+        WHERE user_id = %s AND role = 'delivery_person'
+    ''', (delivery_person_id,))
+
     profile = cursor.fetchone()
-    
+
     # 獲取配送統計
-    cursor.execute("""
+    cursor.execute('''
         SELECT 
-            COUNT(CASE WHEN status = '已送達' THEN 1 END) as completed_orders,
-            COUNT(CASE WHEN status IN ('待配送', '配送中') THEN 1 END) as pending_orders
-        FROM Orders 
+            COUNT(CASE WHEN delivery_status = 'completed' THEN 1 END) AS completed_orders,
+            COUNT(CASE WHEN delivery_status IN ('pending', 'in_progress') THEN 1 END) AS pending_orders
+        FROM deliveries 
         WHERE delivery_person_id = %s
-    """, (delivery_id,))
-    
+    ''', (delivery_id,))
+
     stats = cursor.fetchone()
     cursor.close()
     conn.close()
-    
+
     return render_template('delivery_profile.html', profile=profile, stats=stats)
 
 @app.route('/delivery/<int:delivery_id>/update_status/<int:order_id>', methods=['POST'])
 def update_delivery_status(delivery_id, order_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     if int(session['user_id']) != int(delivery_id):
         flash('無權執行此操作', 'danger')
         return redirect(url_for('login'))
-        
+
     status = request.form.get('status')
-    if status not in ['配送中', '已送達']:
+    if status not in ['in_progress', 'completed']:
         flash('無效的狀態更新', 'danger')
         return redirect(url_for('delivery_orders', delivery_id=delivery_id))
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("""
-        UPDATE Orders 
-        SET status = %s 
-        WHERE order_id = %s AND delivery_person_id = %s
-    """, (status, order_id, delivery_id))
-    
+
+    cursor.execute('''
+        UPDATE deliveries 
+        SET delivery_status = %s 
+        WHERE delivery_id = %s AND delivery_person_id = %s
+    ''', (status, order_id, delivery_id))
+
     conn.commit()
     cursor.close()
     conn.close()
-    
+
     flash('訂單狀態已更新', 'success')
     return redirect(url_for('delivery_orders', delivery_id=delivery_id))
 
