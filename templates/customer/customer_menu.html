@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container mt-5">
     <h1>菜單</h1>
-    <form id="orderForm" action="{{ url_for('place_order', restaurant_id=restaurant_id) }}" method="post">
+    <form id="orderForm" action="{{ url_for('place_order', restaurant_id=restaurant_id) }}" method="post" onsubmit="return validateForm()">
         <table class="table">
             <thead>
                 <tr>
@@ -27,9 +27,28 @@
                 {% endfor %}
             </tbody>
         </table>
-        <div class="text-end mt-3"></div>
+        <div class="text-end mt-3">
             <button type="submit" class="btn btn-primary">下單</button>
         </div>
     </form>
 </div>
+
+<script>
+function validateForm() {
+    const inputs = document.querySelectorAll('input[type="number"]');
+    let hasNonZeroValue = true;
+    
+    for (let input of inputs) {
+        if (parseInt(input.value) > 0) {
+            hasNonZeroValue = false;
+            break;
+        }
+    }
+    if (hasNonZeroValue) {
+        alert('請至少選擇一道菜');
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}

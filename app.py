@@ -563,7 +563,7 @@ def manage_platform_orders(platform_id):
                          platform_id=platform_id,
                          orders=orders)
 
-#餐廳--------------------------------------------------------------------
+#客戶--------------------------------------------------------------------
 @app.route('/customer/<int:customer_id>/dashboard', methods=['GET'])
 def customer_dashboard(customer_id):
     connection =  get_db_connection()
@@ -590,7 +590,7 @@ def customer_view_restaurant(customer_id):
 def customer_pickup(customer_id):
     connection =  get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM orders WHERE customer_id = %s AND (status = %s OR status = %s)', (customer_id, 'accepted', 'pending'))
+    cursor.execute('SELECT * FROM orders WHERE customer_id = %s AND status != %s ', (customer_id, 'all_completed'))
     pickup = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -601,7 +601,7 @@ def customer_pickup(customer_id):
 def customer_pickup_confirm(customer_id, order_id):
     connection = get_db_connection()
     cursor = connection.cursor()
-    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('delivered', order_id))
+    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('all_completed', order_id))
     connection.commit()
     cursor.close()
     connection.close()
@@ -720,7 +720,7 @@ def place_order(restaurant_id):
     # 創建訂單
     cursor.execute(
         "INSERT INTO Orders (customer_id, restaurant_id, status, total_price) VALUES (%s, %s, %s, %s)",
-        (customer_id, restaurant_id, 'pending', 0)
+        (customer_id, restaurant_id, 'accepted', 0)
     )
     connection.commit()
     # 獲取orders最近新增的ID

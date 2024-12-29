@@ -18,7 +18,7 @@
                     <td>${{ order.total_price }}</td>
                     <td>{{ order.order_date }}</td>
                     <td>                        
-                        {% if order.status == 'accepted' %}
+                        {% if order.status == 'delivery_completed' %}
                             <form action="{{ url_for('customer_pickup_confirm', customer_id = customer_id ,order_id = order.order_id) }}" method="post">
                                 <button type="submit" class="btn btn-primary">取餐確認</button>
                             </form>

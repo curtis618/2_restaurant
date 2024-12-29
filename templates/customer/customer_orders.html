@@ -19,16 +19,20 @@
                     <td>${{ order.total_price }}</td>
                     <td>{{ order.order_date }}</td>
                     <td>
-                        {% if order.status == 'pending' %}
-                        <h4 class="text-end status-text">運送中</h4>
-                        {% elif order.status == 'accepted' %}
-                        <h4 class="text-end status-text">已到貨</h4>
-                        {% elif order.status == 'delivered' %}
-                        <h4 class="text-end status-text">已完成</h4>
+                        {% if order.status == 'accepted' %}
+                        <h5 class="text-end status-text">餐廳接單囉~</h5>
+                        {% elif order.status in ['pending', 'notify'] %}
+                        <h5 class="text-end status-text">餐點準備中</h5>
+                        {% elif order.status == 'get_complete' %}
+                        <h5 class="text-end status-text">餐點運送中</h5>
+                        {% elif order.status == 'delivery_completed' %}
+                        <h5 class="text-end status-text">餐點送達</h5>
+                        {% elif order.status == 'all_completed' %}
+                        <h5 class="text-end status-text">已完成</h5>
                         {% endif %}
                     </td>
                     <td>
-                    {% if order.status == 'delivered' %}
+                    {% if order.status == 'all_completed' %}
                         {% if order.is_reviewed %}
                             <h5 class="text-end status-text">已經評論過囉~</h5>
                         {% else %}
