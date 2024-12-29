@@ -748,8 +748,6 @@ def place_order(restaurant_id):
         else:
             continue
 
-        #menu.stock_quantity - quantity
-        cursor.execute('UPDATE Menus SET stock_quantity = stock_quantity - %s WHERE menu_id = %s', (quantity, menu_id))
     
     # 更新訂單總價
     cursor.execute('SELECT SUM(price) AS total_price FROM Orderitems WHERE order_id = %s', (order_id,))
