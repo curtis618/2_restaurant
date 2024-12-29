@@ -19,16 +19,16 @@
             <ul class="navbar-nav center">
                 {% if session.role == 'vendor' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_orders', restaurant_id=1) }}">訂單管理</a>
+                        <a class="nav-link" href="{{ url_for('manage_orders', restaurant_id=restaurant_id) }}">訂單管理</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('order_history', restaurant_id=1) }}">訂單記錄</a>
+                        <a class="nav-link" href="{{ url_for('order_history', restaurant_id=restaurant_id) }}">訂單記錄</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('add_menu_item', restaurant_id=1) }}">新增菜單項目</a>
+                        <a class="nav-link" href="{{ url_for('add_menu_item', restaurant_id=restaurant_id) }}">新增菜單項目</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view_menu', restaurant_id=1) }}">菜單</a>
+                        <a class="nav-link" href="{{ url_for('view_menu', restaurant_id=restaurant_id) }}">菜單</a>
                     </li>
                 {% elif session.role == 'platform' %}
                     <li class="nav-item">
@@ -54,7 +54,7 @@
             </ul>
             <div class="navbar-nav ml-auto">
                 {% if session.role == 'vendor' %}
-                    <a class="nav-link" href="{{ url_for('rastaurant_profile', restaurant_id=1) }}">個人介面</a>
+                    <a class="nav-link" href="{{ url_for('restaurant_profile', restaurant_id=session.restaurant_id) }}">個人介面</a>
                 {% elif session.role == '外送員' %}
                     <a class="nav-link" href="{{ url_for('delivery_profile', delivery_id=session.user_id) }}">個人介面</a>
                 {% endif %}

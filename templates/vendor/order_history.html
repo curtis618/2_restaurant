@@ -6,14 +6,14 @@
             <thead class="thead-dark">
                 <tr>
                     <th>訂單編號</th>
-                    <th>顧客 ID</th>
+                    <th>顧客名稱</th>
                     <th>總價格</th>
                     <th>狀態更新</th>
                 </tr>
             </thead>
             <tbody>
                 {% for order in orders %}
-                {% if order.status == 'delivered' %}
+                {% if order.status not in ['notify', 'pending', 'accepted'] %}
                 <tr>
                     <td><a href="{{ url_for('order_details', order_id=order.order_id) }}">{{ order.order_id }}</a></td>
                     <td>{{ order.customer_id }}</td>

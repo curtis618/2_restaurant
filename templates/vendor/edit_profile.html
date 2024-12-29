@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="text-center">編輯個人資料</h1>
+
+        {% if user.name == '新餐廳' %}
+            <h2 class="text-center text-danger">請先建立個人資料</h2>
+        {% endif %}
+
+        <div class="form-container p-4 mt-4 shadow rounded bg-white">
+            <form method="POST">
+                <div class="form-group text-center mt-3">
+                    <label for="name">餐廳名稱</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                </div>
+                <div class="form-group text-center mt-3">
+                    <label for="address">餐廳地址</label>
+                    <input type="text" class="form-control" id="address" name="address" value="{{ user.address }}" required>
+                </div>
+                <div class="form-group text-center mt-3">
+                    <label for="phone">聯絡電話</label>
+                    <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone }}" required>
+                </div>
+
+                <div class="form-group text-center mt-3">
+                    <button type="submit" class="btn btn-gradient">更新資料</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('restaurant_profile', restaurant_id=session.user_id) }}" class="btn btn-link">返回個人資料</a>
+        </div>
+    </div>
+{% endblock %}

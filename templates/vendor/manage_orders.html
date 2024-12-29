@@ -6,29 +6,37 @@
             <thead class="thead-dark">
                 <tr>
                     <th>訂單編號</th>
-                    <th>顧客 ID</th>
+                    <th>顧客名稱</th>
                     <th>總價格</th>
                     <th>狀態更新</th>
                 </tr>
             </thead>
             <tbody>
                 {% for order in orders %}
-                {% if order.status != 'delivered' %}
+                {% if order.status not in ['get_completed', 'delivery_completed', 'all_completed'] %}
                 <tr>
                     <td><a href="{{ url_for('order_details', order_id=order.order_id) }}">{{ order.order_id }}</a></td>
-                    <td>{{ order.customer_id }}</td>
+                    <td>{{ order.name }}</td>
                     <td>${{ order.total_price }}</td>
                     <td>
-                    {% if order.status == 'pending' %}
-                        <form method="post" action="{{ url_for('notify_customer', order_id=order.order_id) }}">
+                    {% if order.status == 'accepted' %}
+                        <form method="post" action="{{ url_for('accept_order', order_id=order.order_id, restaurant_id=order.restaurant_id) }}">
                             <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                            <button type="submit" class="btn btn-warning">通知顧客取餐</button>
+                            <input type="hidden" name="restaurant_id" value="{{ order.restaurant_id }}">
+                            <button type="submit" class="btn btn-warning">接單</button>
+                        </form>                                     
+                    {% elif order.status == 'pending' %}
+                        <form method="post" action="{{ url_for('notify_customer', order_id=order.order_id, restaurant_id=order.restaurant_id) }}">
+                            <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                            <input type="hidden" name="restaurant_id" value="{{ order.restaurant_id }}">
+                            <button type="submit" class="btn btn-primary">通知顧客取餐</button>
                         </form>
-                    {% elif order.status == 'accepted' %}
-                        <form method="post" action="{{ url_for('check_order', order_id=order.order_id) }}">
+                    {% elif order.status == 'notify' %}
+                        <form method="post" action="{{ url_for('check_order', order_id=order.order_id, restaurant_id=order.restaurant_id) }}">
                             <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                            <button type="submit" class="btn btn-success">已通知顧客取餐</button>
-                        </form>                    
+                            <input type="hidden" name="restaurant_id" value="{{ order.restaurant_id }}">
+                            <button type="submit" class="btn btn-success">外送員已取餐</button>
+                        </form>                     
                     {% endif %}
                     </td>
                 </tr>

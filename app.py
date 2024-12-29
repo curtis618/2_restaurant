@@ -10,7 +10,7 @@ def get_db_connection():
         host='localhost',
         user='root', 
         password='', 
-        database='FoodDelivery'
+        database='FoodDelivery_2'
     )
     return connection
 
@@ -58,6 +58,13 @@ def register():
                 "INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)",
                 (name, email, password, role)
             )
+            if role == 'vendor':
+                owner_id = cursor.lastrowid
+                cursor.execute("INSERT INTO Restaurants (name,address,owner_id) VALUES (%s,%s,%s)", ("新餐廳"," ",owner_id))
+                cursor.execute("SELECT * FROM Restaurants WHERE owner_id = %s",(owner_id,))
+                restaurant = cursor.fetchone()
+                cursor.execute("UPDATE users SET restaurant_id = %s WHERE user_id = %s", (restaurant['restaurant_id'],owner_id))
+
         
         conn.commit()
         cursor.close()
@@ -79,10 +86,12 @@ def login():
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
+        print(user)
 
         if user and user['password'] == password:
             session['user_id'] = user['user_id']
             session['role'] = user['role']
+            session['restaurant_id'] = user['restaurant_id']
 
             cursor.close()
             conn.close()
@@ -92,7 +101,7 @@ def login():
             elif user['role'] == 'customer':
                 return redirect(url_for('customer_dashboard'))
             elif user['role'] == 'vendor':
-                return redirect(url_for('manage_orders', restaurant_id=user['user_id']))
+                return redirect(url_for('manage_orders', restaurant_id=user['restaurant_id']))
             elif user['role'] == 'platform':
                 return redirect(url_for('platform_dashboard', platform_id=user['user_id']))
             else:
@@ -104,19 +113,31 @@ def login():
 
     return render_template('login.html')
 
-# 餐廳功能
 @app.route('/restaurant/<int:restaurant_id>/orders', methods=['GET', 'POST'])
 def manage_orders(restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM Orders WHERE restaurant_id = %s', (restaurant_id,))
+    cursor.execute('SELECT * FROM Restaurants WHERE restaurant_id = %s', (restaurant_id,))
+    restaurant = cursor.fetchone()
+    if restaurant['name'] == '新餐廳':
+        return redirect(url_for('restaurant_edit_profile'))
+    query = """
+        SELECT o.order_id, o.customer_id, o.total_price, o.status, u.name, o.restaurant_id
+        FROM Orders o
+        JOIN Users u ON o.customer_id = u.user_id
+        WHERE o.restaurant_id = %s
+    """
+
+    cursor.execute(query, (restaurant_id,))
     pending_orders = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('vendor/manage_orders.html', orders=pending_orders)
+
+    return render_template('vendor/manage_orders.html', restaurant_id=restaurant_id, orders=pending_orders)
+
 
 @app.route('/restaurant/<int:restaurant_id>', methods=['GET'])
-def rastaurant_profile(restaurant_id):
+def restaurant_profile(restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
     cursor.execute('SELECT * FROM Restaurants WHERE restaurant_id = %s', (restaurant_id,))
@@ -124,7 +145,7 @@ def rastaurant_profile(restaurant_id):
     cursor.close()
     connection.close()
     print(user)
-    return render_template('vendor/profile.html', user=user)
+    return render_template('vendor/profile.html', restaurant_id=restaurant_id, user=user)
 
 @app.route('/restaurant/<int:restaurant_id>/menu', methods=['GET'])
 def view_menu(restaurant_id):
@@ -134,7 +155,7 @@ def view_menu(restaurant_id):
     menus = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('vendor/menu.html', menus=menus)
+    return render_template('vendor/menu.html', restaurant_id=restaurant_id, menus=menus)
 
 @app.route('/restaurant/<int:restaurant_id>/add_menu_item', methods=['GET', 'POST'])
 def add_menu_item(restaurant_id):
@@ -178,26 +199,51 @@ def order_details(order_id):
 
     return render_template('vendor/order_detail.html', orderitems=orderitems, order=order, order_id=order_id, menu_names=menu_names)
 
-@app.route('/notify_customer/<int:order_id>', methods=['POST'])
-def notify_customer(order_id):
+@app.route('/accept_order/<int:order_id>/<int:restaurant_id>', methods=['POST'])
+def accept_order(order_id, restaurant_id):
     connection = get_db_connection()
-    cursor = connection.cursor()
-    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('accepted', order_id))
-    connection.commit()
-    cursor.close()
-    connection.close()
-    flash('已通知顧客取餐', 'info')
-    return redirect(url_for('manage_orders', restaurant_id=1))
+    cursor = connection.cursor(dictionary=True)
 
-@app.route('/check_order/<int:order_id>', methods=['POST'])
-def check_order(order_id):    
+    try:
+        cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('pending', order_id))
+        connection.commit()
+        flash('接单成功并成功扣除库存', 'info')
+    except Exception as e:
+        # 捕获所有异常并回滚
+        connection.rollback()
+        app.logger.error(f"Error occurred: {str(e)}")  # 记录详细错误信息
+        flash('接单失败，请稍后重试', 'danger')
+    finally:
+        cursor.close()
+        connection.close()
+
+    # 返回到订单管理页面
+    return redirect(url_for('manage_orders', restaurant_id=restaurant_id))
+
+
+#訂單完成通知取餐
+@app.route('/notify_customer/<int:order_id>/<int:restaurant_id>', methods=['POST'])
+def notify_customer(order_id, restaurant_id):
     connection = get_db_connection()
     cursor = connection.cursor()
-    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('delivered', order_id))
+    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('notify', order_id))
     connection.commit()
     cursor.close()
     connection.close()
-    return redirect(url_for('manage_orders', restaurant_id=1))
+    flash('通知顧客取餐', 'info')
+    return redirect(url_for('manage_orders', restaurant_id=restaurant_id))
+
+#外送員已取餐
+@app.route('/check_order/<int:order_id>/<int:restaurant_id>', methods=['POST'])
+def check_order(order_id, restaurant_id):    
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute('UPDATE Orders SET status = %s WHERE order_id = %s', ('get_completed', order_id))
+    connection.commit()
+    cursor.close()
+    connection.close()
+    flash('外送員已取餐', 'info')
+    return redirect(url_for('manage_orders', restaurant_id=restaurant_id))
 
 @app.route('/order_history/<int:restaurant_id>', methods=['GET'])
 def order_history(restaurant_id):
@@ -207,8 +253,65 @@ def order_history(restaurant_id):
     orders = cursor.fetchall()
     cursor.close()
     connection.close()
-    return render_template('vendor/order_history.html', orders=orders)
+    return render_template('vendor/order_history.html', restaurant_id=restaurant_id, orders=orders)
 
+#編輯個人資料
+@app.route('/edit_profile', methods=['GET', 'POST'])
+def restaurant_edit_profile():
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        flash('請先登入', 'danger')
+        return redirect(url_for('login'))
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # 取得當前用戶資料
+        cursor.execute("SELECT * FROM restaurants WHERE owner_id = %s", (user_id,))
+        user = cursor.fetchone()
+
+        if request.method == 'POST':
+            name = request.form['name']
+            address = request.form['address']
+            phone = request.form['phone']
+
+            if not user:
+                # 如果找不到用戶資料，則插入新資料
+                cursor.execute("INSERT INTO restaurants (name, address, phone, owner_id) VALUES (%s, %s, %s, %s)", (name, address, phone, user_id))
+                connection.commit()
+
+                # 插入後更新 users 表中的 restaurant_id
+                cursor.execute("SELECT * FROM restaurants WHERE owner_id = %s", (user_id,))
+                restaurant = cursor.fetchone()
+                cursor.execute("UPDATE users SET restaurant_id = %s WHERE user_id = %s", (restaurant['restaurant_id'], user_id))
+                connection.commit()
+
+                flash('個人資料更新成功', 'success')
+                print('個人資料更新成功')
+                return redirect(url_for('restaurant_profile', restaurant_id=restaurant['restaurant_id']))  # 更新後跳轉回個人資料頁面
+
+            else:
+                # 如果用戶已經有餐廳資料，則更新資料
+                cursor.execute("UPDATE restaurants SET name = %s, address = %s, phone = %s WHERE owner_id = %s", (name, address, phone, user_id))
+                connection.commit()
+                
+                flash('個人資料更新成功', 'success')
+                print('個人資料更新成功')
+                return redirect(url_for('restaurant_profile', restaurant_id=user['restaurant_id']))  # 更新後跳轉回個人資料頁面
+
+    except Exception as e:
+        print(e)
+        # 如果有錯誤，回滾並顯示錯誤
+        connection.rollback()
+        flash(f'更新失敗: {str(e)}', 'danger')
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template('vendor/edit_profile.html', restaurant_id = user['restaurant_id'], user=user)
 
 
 
