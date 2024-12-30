@@ -23,7 +23,7 @@
                         <h5 class="text-end status-text">餐廳接單囉~</h5>
                         {% elif order.status in ['pending', 'notify'] %}
                         <h5 class="text-end status-text">餐點準備中</h5>
-                        {% elif order.status == 'get_complete' %}
+                        {% elif order.status == 'get_completed' %}
                         <h5 class="text-end status-text">餐點運送中</h5>
                         {% elif order.status == 'delivery_completed' %}
                         <h5 class="text-end status-text">餐點送達</h5>
