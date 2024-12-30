@@ -1,37 +1,54 @@
 {% extends "customer/customer_base.html" %}
-{% block content %}   
+{% block content %}
 <div class="container mt-5">
     <h1>菜單</h1>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>餐點名稱</th>
-                <th>價格</th>
-                <th>描述</th>
-                <th>數量</th>
-                <th>選取</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for menu in menus %}
-            <tr>
-                <td>{{ menu.item_name }}</td>
-                <td>{{ menu.price }}</td>
-                <td>{{ menu.description }}</td>
-                <td>
-                    <input type="number" name="quantity_{{ menu.id }}" min="1" max="{{ menu.stock_quantity }}" value="1">
-                </td>
-                <td> 
-                    <input type="checkbox" name="menu_items" value="{{ menu.id }}"> 
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-<div style="position: fixed; bottom: 10px; right: 10px;"></div>
-    <form id="orderForm" action="{{ url_for('place_order', restaurant_id=restaurant_id ,menu_id = 1 ) }}" method="post">
-        <button type="submit" class="btn-order">下單</button>
+    <form id="orderForm" action="{{ url_for('place_order', restaurant_id=restaurant_id) }}" method="post" onsubmit="return validateForm()">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>餐點ID</th>
+                    <th>餐點名稱</th>
+                    <th>價格</th>
+                    <th>描述</th>
+                    <th>數量</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for menu in menus %}
+                <tr>
+                    <td>{{ menu.menu_id }}</td>
+                    <td>{{ menu.item_name }}</td>
+                    <td>{{ menu.price }}</td>
+                    <td>{{ menu.description }}</td>
+                    <td>
+                        <input type="number" name="quantity_{{ menu.menu_id }}" value="0" min="0" max="{{ menu.stock_quantity }}" required>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="text-end mt-3">
+            <button type="submit" class="btn btn-primary">下單</button>
+        </div>
     </form>
 </div>
+
+<script>
+function validateForm() {
+    const inputs = document.querySelectorAll('input[type="number"]');
+    let hasNonZeroValue = true;
+    
+    for (let input of inputs) {
+        if (parseInt(input.value) > 0) {
+            hasNonZeroValue = false;
+            break;
+        }
+    }
+    if (hasNonZeroValue) {
+        alert('請至少選擇一道菜');
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}

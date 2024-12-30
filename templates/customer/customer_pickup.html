@@ -17,10 +17,14 @@
                     <td>{{ order.restaurant_id }}</td>
                     <td>${{ order.total_price }}</td>
                     <td>{{ order.order_date }}</td>
-                    <td>
-                        <form action="{{ url_for('customer_pickup_confirm', customer_id = 1 ,order_id = order.order_id) }}" method="post">
-                            <button type="submit" class="btn btn-primary">取餐確認</button>
-                        </form>
+                    <td>                        
+                        {% if order.status == 'delivery_completed' %}
+                            <form action="{{ url_for('customer_pickup_confirm', customer_id = customer_id ,order_id = order.order_id) }}" method="post">
+                                <button type="submit" class="btn btn-primary">取餐確認</button>
+                            </form>
+                        {% else %}
+                            餐點準備中
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

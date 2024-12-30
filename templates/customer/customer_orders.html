@@ -15,25 +15,31 @@
             <tbody>
                 {% for order in data %}
                 <tr>
-                    <td>{{ order.restaurant_id }}</td>
+                    <td>{{ order.restaurant_name }}</td>
                     <td>${{ order.total_price }}</td>
                     <td>{{ order.order_date }}</td>
                     <td>
-                        {% if order.status == 'pending' %}
-                        <h4 class="text-end status-text">運送中</h4>
-                        {% elif order.status == 'accepted' %}
-                        <h4 class="text-end status-text">已到貨</h4>
-                        {% elif order.status == 'delivered' %}
-                        <h4 class="text-end status-text">已完成</h4>
+                        {% if order.status == 'accepted' %}
+                        <h5 class="text-end status-text">餐廳接單囉~</h5>
+                        {% elif order.status in ['pending', 'notify'] %}
+                        <h5 class="text-end status-text">餐點準備中</h5>
+                        {% elif order.status == 'get_complete' %}
+                        <h5 class="text-end status-text">餐點運送中</h5>
+                        {% elif order.status == 'delivery_completed' %}
+                        <h5 class="text-end status-text">餐點送達</h5>
+                        {% elif order.status == 'all_completed' %}
+                        <h5 class="text-end status-text">已完成</h5>
                         {% endif %}
                     </td>
                     <td>
-                    {% if order.status == 'delivered' %}
-                        {% if order.order_id in reviews %}
-                            <a href="{{ url_for('customer_edit_review', customer_id=order.customer_id, order_id=order.order_id) }}" class="btn btn-secondary">編輯評論</a>
+                    {% if order.status == 'all_completed' %}
+                        {% if order.is_reviewed %}
+                            <h5 class="text-end status-text">已經評論過囉~</h5>
                         {% else %}
-                            <a href="{{ url_for('customer_add_review', order_id = order.order_id , customer_id=order.customer_id , restaurant_id = order.restaurant_id) }}" class="btn btn-primary">新增評論</a>
+                            <a href="{{ url_for('customer_add_review', order_id=order.order_id, customer_id=order.customer_id, restaurant_id=order.restaurant_id) }}" class="btn btn-primary">新增評論</a>
                         {% endif %}
+                    {% else %}
+                        <h5 class="text-end status-text">訂單進行中</h5>
                     {% endif %}
                 </tr>
                 {% endfor %}

@@ -1,13 +1,17 @@
 {% extends "customer/customer_base.html" %}
 {% block content %}
     <!-- Main Content -->
-    {% for user in data %}
-    <div class="profile-card mt-5 p-4">
-        <p class="bio"> 哈囉~{{ user.name }}</p>
-        <p class="bio"> 信箱: {{ user.email }}</p>
-        <p class="bio"> 身分: {{ user.role }}</p>
-        <p class="bio">手機號碼: {{ user.phone }}</p>
-        </div>
+    <div class="container mt-5">
+        {% for user in data %}
+            <div class="profile-card mx-auto mb-4 p-4 shadow rounded">
+                <div class="text-center mb-3">
+                    <img src="https://th.bing.com/th/id/OIP.cMR7vUtHosCEeIX4DNoBtQHaHa?rs=1&pid=ImgDetMain0" alt="User Image" class="profile-img mb-3 rounded-circle border border-primary">
+                </div>
+                <p class="bio text-muted">哈囉~ <span class="font-weight-bold">{{ user.name }}</span></p>
+                <p class="bio text-muted">信箱: <span class="font-weight-bold">{{ user.email }}</span></p>
+                <p class="bio text-muted">身分: <span class="font-weight-bold">{{ user.role }}</span></p>
+                <p class="bio text-muted">手機號碼: <span class="font-weight-bold">{{ user.phone }}</span></p>
+            </div>
         {% endfor %}
     </div>
 {% endblock %}
