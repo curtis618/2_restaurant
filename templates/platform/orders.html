@@ -17,18 +17,20 @@
                             <th>狀態</th>
                             <th>總價</th>
                             <th>訂單時間</th>
+                            
                         </tr>
                     </thead>
                     <tbody>
                         {% for order in orders %}
                         <tr>
                             <td>{{ order.order_id }}</td>
-                            <td>{{ order.customer_name }}</td>
-                            <td>{{ order.restaurant_name }}</td>
-                            <td>{{ order.delivery_person_name or '未指派' }}</td>
+                            <td>{{ order.customer_id }}</td>
+                            <td>{{ order.restaurant_id }}</td>
+                            <td>{{ order.delivery_person_id or '未指派' }}</td>
                             <td>{{ order.status }}</td>
                             <td>${{ "%.2f"|format(order.total_price) }}</td>
                             <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
+
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -37,4 +39,6 @@
         </div>
     </div>
 </div>
+
+
 {% endblock %}

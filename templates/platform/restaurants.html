@@ -16,6 +16,7 @@
                             <th>電話</th>
                             <th>負責人</th>
                             <th>負責人信箱</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -27,6 +28,9 @@
                             <td>{{ restaurant.phone }}</td>
                             <td>{{ restaurant.owner_name }}</td>
                             <td>{{ restaurant.owner_email }}</td>
+                            <td>
+                                <a href="{{ url_for('restaurant_detail', platform_id=platform_id, restaurant_id=restaurant.restaurant_id) }}" class="btn btn-info btn-sm">詳細資訊</a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

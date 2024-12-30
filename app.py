@@ -552,37 +552,24 @@ def platform_dashboard(platform_id):
     
     # 獲取所有餐廳資訊
     cursor.execute("""
-        SELECT r.*, u.name as owner_name 
+        SELECT r.*, u.name AS owner_name 
         FROM restaurants r 
-        JOIN users u ON r.owner_id = u.user_id
+        INNER JOIN users u ON r.owner_id = u.user_id
     """)
     restaurants = cursor.fetchall()
     
     # 獲取所有外送員資訊
     cursor.execute("""
-        SELECT u.*, 
-            COUNT(CASE WHEN d.delivery_time IS NOT NULL THEN 1 END) as completed_deliveries,
-            COUNT(CASE WHEN d.delivery_time IS NULL THEN 1 END) as ongoing_deliveries
-        FROM users u 
-        LEFT JOIN deliveries d ON u.user_id = d.delivery_person_id
-        WHERE u.role = '外送員'
-        GROUP BY u.user_id
+    SELECT *
+    FROM users
+    WHERE role ="delivery_person"
     """)
     delivery_persons = cursor.fetchall()
     
     # 獲取所有訂單資訊
     cursor.execute("""
-        SELECT o.*, 
-            c.name as customer_name,
-            r.name as restaurant_name,
-            u.name as delivery_person_name
-        FROM orders o
-        JOIN users c ON o.customer_id = c.user_id
-        JOIN restaurants r ON o.restaurant_id = r.restaurant_id
-        LEFT JOIN deliveries d ON o.order_id = d.order_id
-        LEFT JOIN users u ON d.delivery_person_id = u.user_id
-        ORDER BY o.order_date DESC
-        LIMIT 10
+        SELECT *
+        FROM orders
     """)
     recent_orders = cursor.fetchall()
     
@@ -603,9 +590,9 @@ def manage_restaurants(platform_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT r.*, u.name as owner_name, u.email as owner_email
+        SELECT r.*, u.name AS owner_name, u.email AS owner_email
         FROM restaurants r
-        JOIN users u ON r.owner_id = u.user_id
+        INNER JOIN users u ON r.owner_id = u.user_id
     """)
     restaurants = cursor.fetchall()
     cursor.close()
@@ -622,16 +609,36 @@ def manage_delivery_persons(platform_id):
     
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    
+    # 獲取所有 role 為 delivery_person 的使用者
     cursor.execute("""
-        SELECT u.*, 
-            COUNT(CASE WHEN d.delivery_time IS NOT NULL THEN 1 END) as completed_deliveries,
-            COUNT(CASE WHEN d.delivery_time IS NULL THEN 1 END) as ongoing_deliveries
-        FROM users u 
-        LEFT JOIN deliveries d ON u.user_id = d.delivery_person_id
-        WHERE u.role = '外送員'
-        GROUP BY u.user_id
+        SELECT *
+        FROM users 
+        WHERE role = 'delivery_person'
     """)
+    
     delivery_persons = cursor.fetchall()
+    
+    # 獲取每個外送員的訂單統計
+    for person in delivery_persons:
+        # 獲取已完成訂單數
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM orders
+            WHERE delivery_person_id = %s AND status = 'all_completed'
+        """, (person['user_id'],))
+        completed = cursor.fetchone()
+        person['completed_deliveries'] = completed['count'] if completed else 0
+        
+        # 獲取進行中訂單數
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM orders
+            WHERE delivery_person_id = %s AND status IN ('accepted', 'notify', 'get_completed', 'delivery_completed')
+        """, (person['user_id'],))
+        ongoing = cursor.fetchone()
+        person['ongoing_deliveries'] = ongoing['count'] if ongoing else 0
+    
     cursor.close()
     conn.close()
     
@@ -647,16 +654,10 @@ def manage_platform_orders(platform_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT o.*, 
-            c.name as customer_name,
-            r.name as restaurant_name,
-            u.name as delivery_person_name
-        FROM orders o
-        JOIN users c ON o.customer_id = c.user_id
-        JOIN restaurants r ON o.restaurant_id = r.restaurant_id
-        LEFT JOIN deliveries d ON o.order_id = d.order_id
-        LEFT JOIN users u ON d.delivery_person_id = u.user_id
-        ORDER BY o.order_date DESC
+        SELECT *
+
+        FROM orders 
+
     """)
     orders = cursor.fetchall()
     cursor.close()
@@ -666,6 +667,108 @@ def manage_platform_orders(platform_id):
                          platform_id=platform_id,
                          orders=orders)
 
+@app.route('/platform/<int:platform_id>/restaurant_detail/<int:restaurant_id>')
+def restaurant_detail(platform_id, restaurant_id):
+    if 'user_id' not in session or session['role'] != 'platform':
+        return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    # 獲取餐廳基本資訊
+    cursor.execute("""
+        SELECT r.*, u.name AS owner_name, u.email AS owner_email
+        FROM restaurants r
+        INNER JOIN users u ON r.owner_id = u.user_id
+        WHERE r.restaurant_id = %s
+    """, (restaurant_id,))
+    restaurant = cursor.fetchone()
+    
+    # 獲取所有訂單
+    cursor.execute("""
+        SELECT o.*, u.name as customer_name
+        FROM orders o
+        INNER JOIN users u ON o.customer_id = u.user_id
+        WHERE o.restaurant_id = %s
+        AND o.status = 'all_completed'
+        ORDER BY o.order_date DESC
+    """, (restaurant_id,))
+    all_orders = cursor.fetchall()
+    
+    # 獲取今日訂單
+    cursor.execute("""
+        SELECT o.*, u.name as customer_name
+        FROM orders o
+        INNER JOIN users u ON o.customer_id = u.user_id
+        WHERE o.restaurant_id = %s
+        AND o.status = 'all_completed'
+        AND DATE(o.order_date) = CURDATE()
+    """, (restaurant_id,))
+    today_orders = cursor.fetchall()
+    
+    # 計算今日總金額
+    today_total = sum(order['total_price'] for order in today_orders)
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('platform/restaurant_detail.html',
+                         platform_id=platform_id,
+                         restaurant=restaurant,
+                         all_orders=all_orders,
+                         today_orders=today_orders,
+                         today_total=today_total)
+
+@app.route('/platform/<int:platform_id>/delivery_detail/<int:delivery_id>')
+def delivery_detail(platform_id, delivery_id):
+    if 'user_id' not in session or session['role'] != 'platform':
+        return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    # 獲取外送員基本資訊
+    cursor.execute("""
+        SELECT u.*
+        FROM users u
+        WHERE u.user_id = %s AND u.role = 'delivery_person'
+    """, (delivery_id,))
+    delivery_person = cursor.fetchone()
+    print(delivery_person)
+    
+    # 獲取所有已完成訂單
+    cursor.execute("""
+        SELECT o.*, u.name as customer_name, r.name as restaurant_name
+        FROM orders o
+        INNER JOIN users u ON o.customer_id = u.user_id
+        INNER JOIN restaurants r ON o.restaurant_id = r.restaurant_id
+        WHERE o.delivery_person_id = %s
+        AND o.status = 'all_completed'
+        ORDER BY o.order_date DESC
+    """, (delivery_id,))
+    all_orders = cursor.fetchall()
+    
+    # 獲取今日已完成訂單
+    cursor.execute("""
+        SELECT o.*, u.name as customer_name, r.name as restaurant_name
+        FROM orders o
+        INNER JOIN users u ON o.customer_id = u.user_id
+        INNER JOIN restaurants r ON o.restaurant_id = r.restaurant_id
+        WHERE o.delivery_person_id = %s
+        AND o.status = 'all_completed'
+        AND DATE(o.order_date) = CURDATE()
+    """, (delivery_id,))
+    today_orders = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('platform/delivery_detail.html',
+                         platform_id=platform_id,
+                         delivery_person=delivery_person,
+                         all_orders=all_orders,
+                         today_orders=today_orders,
+                         today_delivery_fee=len(today_orders) * 100)  # 每單100元
 #客戶--------------------------------------------------------------------
 @app.route('/customer/<int:customer_id>/dashboard', methods=['GET'])
 def customer_dashboard(customer_id):

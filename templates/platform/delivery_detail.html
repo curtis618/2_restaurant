@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ delivery_person.name }} - 詳細資訊</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>基本資訊</h5>
+            <p>外送員ID：{{ delivery_person.user_id }}</p>
+            <p>信箱：{{ delivery_person.email }}</p>
+            <p>電話：{{ delivery_person.phone or '未設置' }}</p>
+            
+            <hr>
+            
+            <h5>訂單統計</h5>
+            <p>總訂單數：{{ all_orders|length }}</p>
+            <p>今日訂單數：{{ today_orders|length }}</p>
+            <p>今日應付金額：${{ today_delivery_fee }} (每單100元)</p>
+            
+            {% if today_delivery_fee > 0 %}
+            <button type="button" class="btn btn-success" onclick="alert('已付款給外送員 = {{ today_delivery_fee }}元')">處理今日付款</button>
+            {% endif %}
+            
+            <hr>
+            
+            <h5>訂單列表</h5>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>訂單ID</th>
+                            <th>客戶名稱</th>
+                            <th>餐廳名稱</th>
+                            <th>狀態</th>
+                            <th>訂單時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in all_orders %}
+                        <tr>
+                            <td>{{ order.order_id }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>{{ order.restaurant_name }}</td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                    <span class="badge bg-warning">待處理</span>
+                                {% elif order.status == 'accepted' %}
+                                    <span class="badge bg-info">已接單</span>
+                                {% elif order.status == 'in_progress' %}
+                                    <span class="badge bg-primary">配送中</span>
+                                {% elif order.status == 'completed' %}
+                                    <span class="badge bg-success">已完成</span>
+                                {% elif order.status == 'cancelled' %}
+                                    <span class="badge bg-danger">已取消</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.order_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

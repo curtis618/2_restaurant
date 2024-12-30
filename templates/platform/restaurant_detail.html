@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ restaurant.name }} - 詳細資訊</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>基本資訊</h5>
+            <p>餐廳ID：{{ restaurant.restaurant_id }}</p>
+            <p>地址：{{ restaurant.address }}</p>
+            <p>電話：{{ restaurant.phone }}</p>
+            <p>負責人：{{ restaurant.owner_name }}</p>
+            <p>負責人信箱：{{ restaurant.owner_email }}</p>
+            
+            <hr>
+            
+            <h5>訂單統計</h5>
+            <p>總訂單數：{{ all_orders|length }}</p>
+            <p>今日訂單數：{{ today_orders|length }}</p>
+            <p>今日總金額：${{ today_total }}</p>
+            
+            {% if today_total > 0 %}
+            <button onclick="processPayment({{ restaurant.restaurant_id }}, {{ today_total }})" class="btn btn-success">處理今日付款</button>
+            {% endif %}
+            
+            <hr>
+            
+            <h5>訂單列表</h5>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>訂單ID</th>
+                            <th>客戶名稱</th>
+                            <th>總價</th>
+                            <th>狀態</th>
+                            <th>訂單時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in all_orders %}
+                        {% if order.status == 'all_completed' %}
+                        <tr>
+                            <td>{{ order.order_id }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>${{ order.total_price }}</td>
+                            <td>{{ order.status }}</td>
+                            <td>{{ order.order_date }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function processPayment(restaurantId, amount) {
+    alert(`已付款 $${amount} 給餐廳ID: ${restaurantId}`);
+}
+</script>
+{% endblock %}
