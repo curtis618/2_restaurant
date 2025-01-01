@@ -2,7 +2,7 @@
 [Git Repo](https://github.com/curtis618/2_restaurant)
 
 ## 資料庫
-![資料庫架構](https://hackmd.io/_uploads/Sk0Zq1XUkl.png)
+![資料庫架構](db.png)
 
 <details>
 <summary>SQL 程式碼</summary>
