@@ -1,10 +1,13 @@
 # 軟體工程期末作業
-* [git repo](https://github.com/curtis618/2_restaurant)
-## 資料庫
-![Untitled](https://hackmd.io/_uploads/Sk0Zq1XUkl.png)
+[Git Repo](https://github.com/curtis618/2_restaurant)
 
-:::spoiler SQL程式碼
-```MySQL=
+## 資料庫
+![資料庫架構](https://hackmd.io/_uploads/Sk0Zq1XUkl.png)
+
+<details>
+<summary>SQL 程式碼</summary>
+
+```sql
 CREATE DATABASE FoodDelivery;
 
 USE FoodDelivery;
@@ -79,30 +82,26 @@ CREATE TABLE Reviews (
     FOREIGN KEY (restaurant_id) REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE
 );
 ```
-:::
+</details>
+
+## 分工
 ### 餐廳：楊期閎
-:::info
 * 菜單上架
 * 確認收單
 * 通知取餐
-:::
+
 ### 外送員：李晉瑋
-:::info
 * 查看待送訂單
 * 接單
 * 取貨
 * 送達簽收
-:::
+
 ### 平台：孫翊軒
-:::info
 * 結算商家、客戶、小哥的款項出帳
-:::
+
 ### 客戶：廖志賢
-:::info
 * 查看菜單
 * 下單
 * 收貨
 * 給評
-
-:::
 
