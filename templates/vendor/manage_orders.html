@@ -29,14 +29,10 @@
                         <form method="post" action="{{ url_for('notify_customer', order_id=order.order_id, restaurant_id=order.restaurant_id) }}">
                             <input type="hidden" name="order_id" value="{{ order.order_id }}">
                             <input type="hidden" name="restaurant_id" value="{{ order.restaurant_id }}">
-                            <button type="submit" class="btn btn-primary">通知顧客取餐</button>
+                            <button type="submit" class="btn btn-primary">通知外送員取餐</button>
                         </form>
                     {% elif order.status == 'notify' %}
-                        <form method="post" action="{{ url_for('check_order', order_id=order.order_id, restaurant_id=order.restaurant_id) }}">
-                            <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                            <input type="hidden" name="restaurant_id" value="{{ order.restaurant_id }}">
-                            <button type="submit" class="btn btn-success">外送員已取餐</button>
-                        </form>                     
+                        外送員取餐       
                     {% endif %}
                     </td>
                 </tr>

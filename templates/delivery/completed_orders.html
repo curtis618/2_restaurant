@@ -13,7 +13,6 @@
             <th>顧客ID</th>
             <th>餐廳名稱</th>
             <th>金額</th>
-            <th>完成時間</th>
         </tr>
     </thead>
     <tbody>
@@ -23,7 +22,6 @@
             <td>{{ order.customer_id }}</td>
             <td>{{ order.restaurant_name }}</td>
             <td>${{ order.total_price }}</td>
-            <td>{{ order.delivery_time }}</td>
         </tr>
         {% endfor %}
     </tbody>

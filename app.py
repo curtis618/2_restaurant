@@ -40,17 +40,7 @@ def register():
             conn.close()
             return redirect(url_for('register'))
 
-        # 如果是外送員，獲取新的 delivery_person_id
-        if role == 'delivery_person':
-            cursor.execute("SELECT MAX(delivery_person_id) as max_id FROM users WHERE role = 'delivery_person'")
-            result = cursor.fetchone()
-            delivery_person_id = 1 if result['max_id'] is None else result['max_id'] + 1
-            
-            # 插入新用戶，包含 delivery_person_id
-            cursor.execute(
-                "INSERT INTO users (name, email, password, role, delivery_person_id) VALUES (%s, %s, %s, %s, %s)",
-                (name, email, password, role, delivery_person_id)
-            )
+
         else:
                 
             # 非外送員用戶正常插入
@@ -349,43 +339,130 @@ def delivery_dashboard(delivery_person_id):
 # 待配送订单
 @app.route('/delivery/<int:delivery_person_id>/orders', methods=['GET'])
 def view_delivery_orders(delivery_person_id):
+    # 确认当前用户是否是对应的外送员
     if session.get('user_id') != delivery_person_id or session.get('role') != 'delivery_person':
-        flash('無權訪問此頁面', 'danger')
+        flash('無權查看此頁面', 'danger')
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT o.order_id, o.customer_id, o.total_price, r.name as restaurant_name 
-        FROM Orders o
-        JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
-        WHERE o.delivery_person_id IS NULL AND o.status = 'notify'
-    """)
-    orders = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return render_template('delivery/view_delivery_orders.html', orders=orders, delivery_person_id=delivery_person_id)
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        # 获取待配送订单（状态为 'notify' 且未被接单）
+        cursor.execute("""
+            SELECT o.order_id, o.customer_id, o.total_price, o.status, r.name AS restaurant_name
+            FROM Orders o
+            JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
+            WHERE o.delivery_person_id IS NULL
+        """)
+        orders = cursor.fetchall()
+        
+
+        cursor.execute("""
+            SELECT o.order_id, o.customer_id, o.total_price, o.status, r.name AS restaurant_name
+            FROM Orders o
+            JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
+            WHERE o.delivery_person_id = %s
+        """,(delivery_person_id,))
+        get_orders=cursor.fetchall()
+        print(orders)
+
+        # 输出调试信息
+        app.logger.debug(f"Orders fetched for delivery_person_id={delivery_person_id}: {orders}")
+
+    except Exception as e:
+        app.logger.error(f"Error fetching orders: {e}")
+        orders = []
+        flash('無法獲取訂單列表，請稍後再試', 'danger')
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template('delivery/view_delivery_orders.html', orders=orders, delivery_person_id=delivery_person_id,get_orders=get_orders)
 
 
-# 接单操作
+#接單
 @app.route('/delivery/<int:delivery_person_id>/orders/<int:order_id>/accept', methods=['POST'])
 def accept_delivery(delivery_person_id, order_id):
     if session.get('user_id') != delivery_person_id or session.get('role') != 'delivery_person':
         flash('無權執行此操作', 'danger')
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE Orders
-        SET delivery_person_id = %s, status = 'in_progress'
-        WHERE order_id = %s AND delivery_person_id IS NULL
-    """, (delivery_person_id, order_id))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    flash('成功接单！', 'success')
-    return redirect(url_for('delivery/view_delivery_orders', delivery_person_id=delivery_person_id))
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            UPDATE Orders 
+            SET delivery_person_id = %s, status = %s 
+            WHERE order_id = %s AND delivery_person_id IS NULL
+        """, (delivery_person_id, 'get_completed', order_id))
+
+        if cursor.rowcount > 0:
+            connection.commit()
+            flash('成功接單！', 'success')
+        else:
+            connection.rollback()
+            flash('接單失敗，訂單可能已被接單或不存在', 'danger')
+
+    except Exception as e:
+        connection.rollback()
+        app.logger.error(f"Error during order acceptance: {e}")
+        flash(f'發生錯誤: {str(e)}', 'danger')
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return redirect(url_for('view_delivery_orders', delivery_person_id=delivery_person_id))
+
+
+
+#送達
+@app.route('/delivery/<int:delivery_person_id>/orders/<int:order_id>/complete', methods=['POST'])
+def complete_delivery(delivery_person_id, order_id):
+    if session.get('user_id') != delivery_person_id or session.get('role') != 'delivery_person':
+        flash('無權執行此操作', 'danger')
+        return redirect(url_for('login'))
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT status, delivery_person_id 
+            FROM Orders 
+            WHERE order_id = %s
+        """, (order_id,))
+        order = cursor.fetchone()
+
+
+        cursor.execute("""
+            UPDATE Orders 
+            SET status = %s 
+            WHERE order_id = %s AND delivery_person_id = %s AND status = %s
+        """, ('delivery_completed', order_id, delivery_person_id, 'get_completed'))
+        
+        if cursor.rowcount > 0:
+            connection.commit()
+            flash('訂單已標記為送達！', 'success')
+        else:
+            connection.rollback()
+            flash('更新失敗，可能訂單不存在或狀態不正確', 'danger')
+
+    except Exception as e:
+        connection.rollback()
+        app.logger.error(f"Error during order completion: {e}")
+        flash(f'發生錯誤: {str(e)}', 'danger')
+
+    finally:
+        cursor.close()
+        connection.close()
+
+    return redirect(url_for('view_delivery_orders', delivery_person_id=delivery_person_id))
+
+
 
 
 
@@ -402,7 +479,7 @@ def completed_orders(delivery_person_id):
         SELECT o.order_id, o.customer_id, o.total_price, r.name as restaurant_name
         FROM Orders o
         JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
-        WHERE o.delivery_person_id = %s AND o.status = 'completed'
+        WHERE o.delivery_person_id = %s AND o.status = 'delivery_completed'
     """, (delivery_person_id,))
     orders = cursor.fetchall()
     cursor.close()
@@ -521,14 +598,6 @@ def manage_delivery_persons(platform_id):
         completed = cursor.fetchone()
         person['completed_deliveries'] = completed['count'] if completed else 0
         
-        # 獲取進行中訂單數
-        cursor.execute("""
-            SELECT COUNT(*) as count
-            FROM orders
-            WHERE delivery_person_id = %s AND status IN ('accepted', 'notify', 'get_completed', 'delivery_completed')
-        """, (person['user_id'],))
-        ongoing = cursor.fetchone()
-        person['ongoing_deliveries'] = ongoing['count'] if ongoing else 0
     
     cursor.close()
     conn.close()
@@ -816,7 +885,7 @@ def place_order(restaurant_id):
     cursor = connection.cursor(dictionary=True)
     # 創建訂單
     cursor.execute(
-        "INSERT INTO Orders (customer_id, restaurant_id, status, total_price) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO Orders (customer_id, restaurant_id, status, total_price,delivery_person_id) VALUES (%s, %s, %s, %s, NUll)",
         (customer_id, restaurant_id, 'accepted', 0)
     )
     connection.commit()

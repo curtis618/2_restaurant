@@ -1,11 +1,9 @@
 {% extends "delivery/delivery_base.html" %}
 
-{% block title %}待配送訂單{% endblock %}
-
 {% block content %}
-<h2 class="text-center">待配送訂單</h2>
-<hr>
+<h2 class="text-center">待接單</h2>
 {% if orders %}
+
 <table class="table table-striped">
     <thead class="thead-dark">
         <tr>
@@ -13,26 +11,89 @@
             <th>顧客ID</th>
             <th>餐廳名稱</th>
             <th>金額</th>
+            <th>狀態</th>
             <th>操作</th>
         </tr>
     </thead>
     <tbody>
         {% for order in orders %}
+        {% if order.status == 'notify' or order.status == 'get_completed' %}
         <tr>
             <td>{{ order.order_id }}</td>
             <td>{{ order.customer_id }}</td>
             <td>{{ order.restaurant_name }}</td>
             <td>${{ order.total_price }}</td>
+            <td>{{order.status}}</td>
             <td>
+                
+                {% if order.status == 'notify' %}
+                
+                <!-- 接單按鈕 -->
                 <form action="{{ url_for('accept_delivery', delivery_person_id=delivery_person_id, order_id=order.order_id) }}" method="post">
                     <button type="submit" class="btn btn-primary">接單</button>
                 </form>
+                {% elif order.status == 'get_completed' %}
+                <!-- 送達按鈕 -->
+                <form action="{{ url_for('complete_delivery', delivery_person_id=delivery_person_id, order_id=order.order_id) }}" method="post">
+                    <button type="submit" class="btn btn-success">送達</button>
+                </form>
+                {% endif %}
             </td>
         </tr>
-        {% endfor %}
+        {%endif%}
+        {%endfor%}
     </tbody>
+    
 </table>
+
 {% else %}
 <p class="text-center text-muted">目前沒有待配送訂單。</p>
 {% endif %}
+
+
+<h2 class="text-center">個人接單</h2>
+
+
+<table class="table table-striped">
+    <thead class="thead-dark">
+        <tr>
+            <th>訂單編號</th>
+            <th>顧客ID</th>
+            <th>餐廳名稱</th>
+            <th>金額</th>
+            <th>狀態</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in get_orders %}
+        {% if order.status == 'notify' or order.status == 'get_completed' %}
+        <tr>
+            <td>{{ order.order_id }}</td>
+            <td>{{ order.customer_id }}</td>
+            <td>{{ order.restaurant_name }}</td>
+            <td>${{ order.total_price }}</td>
+            <td>{{order.status}}</td>
+            <td>
+                
+                {% if order.status == 'notify' %}
+                
+                <!-- 接單按鈕 -->
+                <form action="{{ url_for('accept_delivery', delivery_person_id=delivery_person_id, order_id=order.order_id) }}" method="post">
+                    <button type="submit" class="btn btn-primary">接單</button>
+                </form>
+                {% elif order.status == 'get_completed' %}
+                <!-- 送達按鈕 -->
+                <form action="{{ url_for('complete_delivery', delivery_person_id=delivery_person_id, order_id=order.order_id) }}" method="post">
+                    <button type="submit" class="btn btn-success">送達</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {%endif%}
+        {%endfor%}
+    </tbody>
+    
+</table>
+
 {% endblock %}
