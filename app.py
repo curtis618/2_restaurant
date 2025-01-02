@@ -10,7 +10,7 @@ def get_db_connection():
         host='localhost',
         user='root', 
         password='', 
-        database='fooddelivery'
+        database='FoodDelivery_2'
     )
     return connection
 
@@ -103,7 +103,8 @@ def login():
             conn.close()
 
     return render_template('login.html')
-
+##############################################################################################################################
+# 餐廳
 @app.route('/restaurant/<int:restaurant_id>/orders', methods=['GET', 'POST'])
 def manage_orders(restaurant_id):
     connection = get_db_connection()
@@ -188,7 +189,7 @@ def order_details(order_id):
     cursor.execute('SELECT * FROM Orders WHERE order_id = %s', (order_id,))
     order = cursor.fetchone()
 
-    return render_template('vendor/order_detail.html', orderitems=orderitems, order=order, order_id=order_id, menu_names=menu_names)
+    return render_template('vendor/order_detail.html', restaurant_id=order['restaurant_id'], orderitems=orderitems, order=order, order_id=order_id, menu_names=menu_names)
 
 @app.route('/accept_order/<int:order_id>/<int:restaurant_id>', methods=['POST'])
 def accept_order(order_id, restaurant_id):
@@ -304,7 +305,7 @@ def restaurant_edit_profile():
 
     return render_template('vendor/edit_profile.html', restaurant_id = user['restaurant_id'], user=user)
 
-
+##############################################################################################################################
 
 #外送員面板
 @app.route('/delivery/<int:delivery_person_id>/dashboard', methods=['GET'])
