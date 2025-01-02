@@ -1,8 +1,12 @@
-# 軟體工程期末作業
+# 第二組_軟體工程期末作業
 [Git Repo](https://github.com/curtis618/2_restaurant)
-
+## 組員
+* 110213010 資管四 楊期閎
+* 111213060 資管三 李晉瑋
+* 111213017 資管三 廖志賢
+* 111213071 資管三 孫翊軒
 ## 資料庫
-![資料庫架構](db.png)
+![資料庫架構](https://hackmd.io/_uploads/Sk0Zq1XUkl.png)
 
 <details>
 <summary>SQL 程式碼</summary>
